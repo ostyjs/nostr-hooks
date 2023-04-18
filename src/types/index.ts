@@ -9,6 +9,7 @@ export interface Config {
 }
 
 export interface Options {
+  enabled?: boolean | undefined;
   batchingInterval?: number | undefined;
   force?: boolean | undefined;
 }
