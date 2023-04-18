@@ -1,9 +1,9 @@
+import { useEffect } from 'react';
 import { matchFilters } from 'nostr-tools';
 
 import { useNostrStore } from './store';
 
 import { Config } from './types';
-import { useEffect } from 'react';
 
 export * from './types';
 export * as utils from './utils';
