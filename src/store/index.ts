@@ -8,9 +8,9 @@ import { Config } from '../types';
 interface State {
   _pool: SimplePool;
   _events: Event[];
-  _subscriptionQueue: Config[];
+  _queue: { config: Config; subId: string }[];
   _isBatching: boolean;
-  _subList: [string, Filter[]][];
+  _subList: { id: string; filters: Filter[]; eose: boolean }[];
 }
 
 interface Actions {
@@ -19,9 +19,10 @@ interface Actions {
   _setIsBatching: (isBatching: boolean) => void;
   _clearQueue: () => void;
   _addEvent: (event: Event) => void;
-  _handlePoolSub: (config: Config) => void;
+  _handlePoolSub: (config: Config, subIds: string[]) => void;
   _processQueue: () => void;
-  _addToQueue: (config: Config) => void;
+  _addToQueue: (config: Config, subId: string) => void;
+  _setEose: (subIds: string[]) => void;
   _addToSubList: (subId: string, filters: Filter[]) => void;
   _removeFromSubList: (subId: string) => void;
   _handleNewSub: (config: Config, subId: string) => void;
@@ -30,23 +31,30 @@ interface Actions {
 export const useNostrStore = create<State & Actions>()((set, get) => ({
   _pool: new SimplePool(),
   _events: [],
-  _subscriptionQueue: [],
+  _queue: [],
   _subList: [],
   _isBatching: false,
+  _setEose: (subIds) => {
+    set((store) => ({
+      _subList: store._subList.map((sub) =>
+        subIds.includes(sub.id) ? { ...sub, eose: true } : sub
+      ),
+    }));
+  },
   _unSub: (subId) => {
     get()._purgeEvents(subId);
     get()._removeFromSubList(subId);
   },
   _purgeEvents: (subId) => {
     const subList = get()._subList;
-    const purgingSub = subList.find((sub) => sub[0] === subId);
+    const purgingSub = subList.find((sub) => sub.id === subId);
     if (!purgingSub) return;
 
-    const purgingFilters = purgingSub[1];
+    const purgingFilters = purgingSub.filters;
     const otherSubsWithSameFilters = subList.filter((otherSub) => {
-      if (otherSub[0] === subId) return false;
+      if (otherSub.id === subId) return false;
 
-      const otherSubFilters = otherSub[1];
+      const otherSubFilters = otherSub.filters;
       return areAllFiltersEqual(purgingFilters, otherSubFilters);
     });
     if (otherSubsWithSameFilters.length > 0) return;
@@ -56,36 +64,47 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
     }));
   },
   _setIsBatching: (isBatching) => set({ _isBatching: isBatching }),
-  _addToQueue: ({ filters, relays }) => {
-    set((store) => ({ _subscriptionQueue: [...store._subscriptionQueue, { filters, relays }] }));
+  _addToQueue: ({ filters, relays }, subId) => {
+    set((store) => ({
+      _queue: [...store._queue, { config: { filters, relays }, subId }],
+    }));
   },
-  _clearQueue: () => set({ _subscriptionQueue: [] }),
+  _clearQueue: () => set({ _queue: [] }),
   _addEvent: (event) => set((store) => ({ _events: [...store._events, event] })),
   _addToSubList: (subId, filters) => {
-    set((store) => ({ _subList: [...store._subList, [subId, filters]] }));
+    set((store) => ({ _subList: [...store._subList, { id: subId, filters, eose: false }] }));
   },
   _removeFromSubList: (subId) => {
-    set((store) => ({ _subList: store._subList.filter((sub) => sub[0] !== subId) }));
+    set((store) => ({ _subList: store._subList.filter((sub) => sub.id !== subId) }));
   },
-  _handlePoolSub: ({ filters, relays }) => {
+  _handlePoolSub: ({ filters, relays }, subIds) => {
     const pool = get()._pool;
     const sub = pool.sub(filterUniqueRelays(relays), filterUniqueFilters(filters));
     sub.on('event', (event: Event) => get()._addEvent(event));
-    sub.on('eose', () => sub.unsub());
+    sub.on('eose', () => {
+      sub.unsub();
+      get()._setEose(subIds);
+    });
   },
   _processQueue: () => {
-    const subscriptionQueue = get()._subscriptionQueue;
-    if (subscriptionQueue.length > 0) {
-      const flattenSub = subscriptionQueue.reduce<Config>(
+    const queue = get()._queue;
+    if (queue.length > 0) {
+      const flattenSub = queue.reduce(
         (acc, curr) => {
           return {
-            relays: [...acc.relays, ...curr.relays],
-            filters: [...acc.filters, ...curr.filters],
+            config: {
+              relays: [...acc.config.relays, ...curr.config.relays],
+              filters: [...acc.config.filters, ...curr.config.filters],
+            },
+            subId: curr.subId,
           };
         },
-        { relays: [], filters: [] }
+        { config: { relays: [], filters: [] }, subId: '' }
       );
-      get()._handlePoolSub({ filters: flattenSub.filters, relays: flattenSub.relays });
+      get()._handlePoolSub(
+        { filters: flattenSub.config.filters, relays: flattenSub.config.relays },
+        queue.map((sub) => sub.subId)
+      );
       get()._clearQueue();
       get()._setIsBatching(false);
     }
@@ -93,10 +112,10 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
   _handleNewSub: ({ filters, relays, options }, subId) => {
     get()._addToSubList(subId, filters);
     if (options?.force) {
-      get()._handlePoolSub({ filters, relays });
+      get()._handlePoolSub({ filters, relays }, [subId]);
       return;
     }
-    get()._addToQueue({ filters, relays });
+    get()._addToQueue({ filters, relays }, subId);
     if (!get()._isBatching) {
       get()._setIsBatching(true);
       setTimeout(get()._processQueue, options?.batchingInterval || 500);
