@@ -1,7 +1,12 @@
 import { Event, Filter, SimplePool, matchFilters } from 'nostr-tools';
 import { create } from 'zustand';
 
-import { areAllFiltersEqual, filterUniqueFilters, filterUniqueRelays } from '../utils';
+import {
+  areAllFiltersEqual,
+  filterUniqueFilters,
+  filterUniqueRelays,
+  removeEmptyFilterItems,
+} from '../utils';
 
 import { Config } from '../types';
 
@@ -79,7 +84,10 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
   },
   _handlePoolSub: ({ filters, relays }, subIds) => {
     const pool = get()._pool;
-    const sub = pool.sub(filterUniqueRelays(relays), filterUniqueFilters(filters));
+    const sub = pool.sub(
+      filterUniqueRelays(relays),
+      filterUniqueFilters(removeEmptyFilterItems(filters))
+    );
     sub.on('event', (event: Event) => get()._addEvent(event));
     sub.on('eose', () => {
       sub.unsub();
@@ -89,20 +97,16 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
   _processQueue: () => {
     const queue = get()._queue;
     if (queue.length > 0) {
-      const flattenSub = queue.reduce(
-        (acc, curr) => {
-          return {
-            config: {
-              relays: [...acc.config.relays, ...curr.config.relays],
-              filters: [...acc.config.filters, ...curr.config.filters],
-            },
-            subId: curr.subId,
-          };
-        },
-        { config: { relays: [], filters: [] }, subId: '' }
+      const flattenSub = queue.reduce<{ filters: Filter[]; relays: string[] }>(
+        (acc, sub) => ({
+          filters: [...acc.filters, ...sub.config.filters],
+          relays: [...acc.relays, ...sub.config.relays],
+        }),
+        { filters: [], relays: [] }
       );
+
       get()._handlePoolSub(
-        { filters: flattenSub.config.filters, relays: flattenSub.config.relays },
+        { filters: flattenSub.filters, relays: flattenSub.relays },
         queue.map((sub) => sub.subId)
       );
       get()._clearQueue();

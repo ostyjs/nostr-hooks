@@ -72,8 +72,7 @@ export const removeEmptyFilterItems = (filters: Filter[]) => {
 };
 
 export const filterUniqueFilters = (filters: Filter[]) => {
-  const validatedFilters = removeEmptyFilterItems(filters);
-  const uniqueFilters = validatedFilters.reduce<Filter[]>((acc, curr) => {
+  const uniqueFilters = filters.reduce<Filter[]>((acc, curr) => {
     if (acc.length === 0) {
       return [curr];
     }
