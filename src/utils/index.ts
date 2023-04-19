@@ -1,5 +1,9 @@
 import { Filter } from 'nostr-tools';
 
+export const generateSubId = () => {
+  return Math.random().toString(36).substring(2);
+};
+
 export const sortObjectByKeys = (obj: any) => {
   const keys = Object.keys(obj).sort();
   const newObj: any = {};
@@ -24,6 +28,17 @@ export const sortFilter = (filter: Filter) => {
 
 export const areFiltersEqual = (a: Filter, b: Filter) => {
   return JSON.stringify(sortFilter(a)) === JSON.stringify(sortFilter(b));
+};
+
+export const areAllFiltersEqual = (a: Filter[], b: Filter[]) => {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  const sortedA = a.map((f) => sortFilter(f));
+  const sortedB = b.map((f) => sortFilter(f));
+
+  return sortedA.every((f, i) => JSON.stringify(f) === JSON.stringify(sortedB[i]));
 };
 
 export const removeEmptyFilterItems = (filters: Filter[]) => {
