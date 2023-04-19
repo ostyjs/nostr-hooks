@@ -14,6 +14,7 @@ interface State {
 }
 
 interface Actions {
+  _unSub: (subId: string) => void;
   _purgeEvents: (subId: string) => void;
   _setIsBatching: (isBatching: boolean) => void;
   _clearQueue: () => void;
@@ -32,12 +33,15 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
   _subscriptionQueue: [],
   _subList: [],
   _isBatching: false,
+  _unSub: (subId) => {
+    get()._purgeEvents(subId);
+    get()._removeFromSubList(subId);
+  },
   _purgeEvents: (subId) => {
     const subList = get()._subList;
     const purgingSub = subList.find((sub) => sub[0] === subId);
     if (!purgingSub) return;
 
-    get()._removeFromSubList(subId);
     const purgingFilters = purgingSub[1];
     const otherSubsWithSameFilters = subList.filter((otherSub) => {
       if (otherSub[0] === subId) return false;

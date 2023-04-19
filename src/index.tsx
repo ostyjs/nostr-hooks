@@ -14,7 +14,7 @@ export const useNostr = ({ filters, relays, options }: Config) => {
   const subId = useRef<string>(generateSubId());
 
   const sub = useNostrStore((store) => store._handleNewSub);
-  const purgeEvents = useNostrStore((store) => store._purgeEvents);
+  const unSub = useNostrStore((store) => store._unSub);
   const events = useNostrStore(
     (store) => store._events.filter((event) => matchFilters(filters, event)),
     (prev, next) => {
@@ -40,7 +40,7 @@ export const useNostr = ({ filters, relays, options }: Config) => {
     }
 
     return () => {
-      purgeEvents(subId.current);
+      unSub(subId.current);
     };
   }, [options?.enabled]);
 
