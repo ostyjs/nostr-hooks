@@ -1,6 +1,6 @@
 {
   "include": ["src/**/*"],
-  "exclude": ["dist", "node_modules"],
+  "exclude": ["dist", "node_modules", "src/tests/**/*"],
   "compilerOptions": {
     "jsx": "react-jsx",
     /* Visit https://aka.ms/tsconfig to read more about this file */
