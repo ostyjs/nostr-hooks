@@ -15,6 +15,7 @@ export const useNostr = ({ filters, relays, options }: Config) => {
 
   const sub = useNostrStore((store) => store.handleNewSub);
   const unSub = useNostrStore((store) => store.unSub);
+  const eose = useNostrStore((store) => store.subMap[subId.current]?.eose);
   const events = useNostrStore(
     (store) => store.events.filter((event) => matchFilters(filters, event)),
     (prev, next) => {
@@ -46,5 +47,6 @@ export const useNostr = ({ filters, relays, options }: Config) => {
 
   return {
     events,
+    eose,
   };
 };
