@@ -13,10 +13,10 @@ export * as utils from './utils';
 export const useNostr = ({ filters, relays, options }: Config) => {
   const subId = useRef<string>(generateSubId());
 
-  const sub = useNostrStore((store) => store._handleNewSub);
-  const unSub = useNostrStore((store) => store._unSub);
+  const sub = useNostrStore((store) => store.handleNewSub);
+  const unSub = useNostrStore((store) => store.unSub);
   const events = useNostrStore(
-    (store) => store._events.filter((event) => matchFilters(filters, event)),
+    (store) => store.events.filter((event) => matchFilters(filters, event)),
     (prev, next) => {
       const matchingPrev = prev.filter((event) => matchFilters(filters, event));
       const matchingNext = next.filter((event) => matchFilters(filters, event));
