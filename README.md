@@ -10,9 +10,10 @@ Nostr-Hooks is a library of React hooks designed to simplify the process of inte
 - Creates a single connection to each Nostr relay at a time and reuses it for all subscriptions, reducing network overhead.
 - Automatically manages subscriptions from multiple components and delivers only the events that each component needs.
 - Automatically batches multiple subscriptions from different components into a single subscription request, further reducing network overhead.
-- Inteligently merges filters into a unique set of filters, reducing the number of subscriptions that need to be created.
+- Inteligently merges filters into a unique set of filters, reducing the load on the Nostr relays.
 - Minimizes re-renders by updating only the events that have changed, improving application performance.
 - Accepts an options object, allowing users to configure various options such as whether the subscription is enabled, whether to force immediate subscription, and the batching interval.
+- Automatically cleans up subscriptions and garbage events when a component unmounts, preventing memory leaks.
 
 ## Installation
 
