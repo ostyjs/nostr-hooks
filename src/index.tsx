@@ -10,7 +10,7 @@ import { generateSubId } from './utils';
 export * from './types';
 export * as utils from './utils';
 
-export const useNostr = ({ filters, relays, options }: Config) => {
+export const useNostrSubscribe = ({ filters, relays, options }: Config) => {
   const subId = useRef<string>(generateSubId());
 
   const sub = useNostrStore((store) => store.handleNewSub);
@@ -49,4 +49,8 @@ export const useNostr = ({ filters, relays, options }: Config) => {
     events,
     eose,
   };
+};
+
+export const useNostrPublish = () => {
+  //
 };
