@@ -5,6 +5,10 @@
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sepehr-safari/nostr-hooks.git"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.js"
