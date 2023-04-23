@@ -104,7 +104,7 @@ const MyComponent = () => {
 
 The optional `options` object accepts the following properties:
 
-- `enabled`: A boolean flag indicating whether the subscription is enabled. If set to `false`, the subscription will not be created.
+- `enabled`: A boolean flag indicating whether the subscription is enabled. If set to `false`, the subscription will not be created. This can be useful for toggling subscriptions on and off.
 
   ```
   Default is `true`
@@ -120,6 +120,15 @@ The optional `options` object accepts the following properties:
 
   ```
   Default is `500`
+  ```
+
+- `invalidate`: A boolean flag indicating whether the existing events are invalidated and a new subscription should be created. This can be useful for refreshing the events for a set of filters.
+
+  - If set to `true`, all the existing events for the provided filters will be purged from the cache and a new subscription will be created. This will cause a re-render for all components that are subscribed to the same filters.
+  - If set to `false`, the subscription will be created if there is no existing events for the provided filters. If there are existing events, the subscription will not be created and the existing events will be returned.
+
+  ```
+  Default is `false`
   ```
 
 ### Example 3: Using multiple subscriptions in a single component:
