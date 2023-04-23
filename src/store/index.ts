@@ -1,10 +1,10 @@
+import _ from 'lodash';
 import { Event, Filter, SimplePool, matchFilters } from 'nostr-tools';
 import { create } from 'zustand';
 
 import { mergeFilters } from '../utils';
 
 import { Config } from '../types';
-import _ from 'lodash';
 
 type Queue = Record<string, Config>;
 type SubMap = Record<string, { filters: Filter[]; eose: boolean }>;
@@ -19,14 +19,15 @@ interface State {
 
 interface Actions {
   unSub: (subId: string) => void;
-  purgeEvents: (subId: string) => void;
+  purgeEvents: (subId: string, force?: boolean) => void;
   setIsBatching: (isBatching: boolean) => void;
   clearQueue: () => void;
   addEvent: (event: Event) => void;
   handlePoolSub: (config: Config, subIds: string[]) => void;
   processQueue: () => void;
   addToQueue: (config: Config, subId: string) => void;
-  setEose: (subIds: string[]) => void;
+  setEoseBySubIds: (subIds: string[], eose: boolean) => void;
+  setEoseByFilters: (filters: Filter[], eose: boolean) => void;
   addToSubList: (subId: string, filters: Filter[]) => void;
   removeFromSubList: (subId: string) => void;
   handleNewSub: (config: Config, subId: string) => void;
@@ -38,28 +39,40 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
   queue: {},
   subMap: {},
   isBatching: false,
-  setEose: (subIds) => {
+  setEoseBySubIds: (subIds, eose) => {
     set((store) => ({
       subMap: _.mapValues(store.subMap, (val, key) =>
-        subIds.includes(key) ? { ...val, eose: true } : val
+        subIds.includes(key) ? { ...val, eose } : val
       ),
     }));
+  },
+  setEoseByFilters: (filters, eose) => {
+    const subMap = get().subMap;
+    const subIds = _.keys(subMap);
+    const subIdsWithSameFilters = subIds.filter((subId) =>
+      _.isEqual(subMap[subId]?.filters, filters)
+    );
+
+    get().setEoseBySubIds(subIdsWithSameFilters, eose);
   },
   unSub: (subId) => {
     get().purgeEvents(subId);
     get().removeFromSubList(subId);
   },
-  purgeEvents: (subId) => {
+  purgeEvents: (subId, force = false) => {
     const subMap = get().subMap;
     const purgingSub = subMap[subId];
     if (!purgingSub) return;
 
     const purgingFilters = purgingSub.filters;
-    const foundAnotherSubWithSameFilters = _.find(
-      subMap,
-      (sub, key) => key !== subId && _.isEqual(sub.filters, purgingFilters)
-    );
-    if (foundAnotherSubWithSameFilters) return;
+
+    if (!force) {
+      const foundAnotherSubWithSameFilters = _.find(
+        subMap,
+        (sub, key) => key !== subId && _.isEqual(sub.filters, purgingFilters)
+      );
+      if (foundAnotherSubWithSameFilters) return;
+    }
 
     set((store) => ({
       events: store.events.filter((event) => !matchFilters(purgingFilters, event)),
@@ -70,7 +83,13 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
     set((store) => ({ queue: { ...store.queue, [subId]: { filters, relays } } }));
   },
   clearQueue: () => set({ queue: {} }),
-  addEvent: (event) => set((store) => ({ events: [...store.events, event] })),
+  addEvent: (event) => {
+    const events = get().events;
+    if (_.find(events, (e) => _.isEqual(e, event))) {
+      return;
+    }
+    set((store) => ({ events: [...store.events, event] }));
+  },
   addToSubList: (subId, filters) => {
     set((store) => ({
       subMap: { ...store.subMap, [subId]: { filters, eose: false } },
@@ -85,7 +104,7 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
     sub.on('event', (event: Event) => get().addEvent(event));
     sub.on('eose', () => {
       sub.unsub();
-      get().setEose(subIds);
+      get().setEoseBySubIds(subIds, true);
     });
   },
   processQueue: () => {
@@ -107,7 +126,17 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
     get().setIsBatching(false);
   },
   handleNewSub: ({ filters, relays, options }, subId) => {
+    if (options?.invalidate === undefined || options?.invalidate === false) {
+      const events = get().events;
+      const matchingEvents = events.filter((event) => matchFilters(filters, event));
+      if (matchingEvents.length) {
+        return;
+      }
+    }
+
     get().addToSubList(subId, filters);
+    get().purgeEvents(subId, true);
+    get().setEoseByFilters(filters, false);
     if (options?.force) {
       get().handlePoolSub({ filters, relays }, [subId]);
       return;
