@@ -34,8 +34,8 @@ import { useNostrSubscribe } from 'nostr-hooks';
 
 const MyComponent = () => {
   const { events, eose } = useNostrSubscribe({
-    filters: [{ authors: ['pubkey1'], kinds: [0] }],
     relays: ['wss://relay.damus.io'],
+    filters: [{ authors: ['pubkey1'], kinds: [0] }],
   });
 
   if (!events && !eose) return <p>Loading...</p>;
@@ -57,7 +57,7 @@ The `useNostrSubscribe` hook takes an object with three optional parameters:
 
 - `filters`: An array of filters to apply to the subscription.
 - `relays`: An array of Nostr relay URLs to use for the subscription.
-- `options`: An object containing additional options to pass to the Nostr client.
+- `options`: An optional object containing additional options to pass to the Nostr client.
 
 The hook returns an object with two properties:
 
@@ -73,8 +73,8 @@ const MyComponent = () => {
   const [toggle, setToggle] = useState(false);
 
   const { events, eose } = useNostrSubscribe({
-    filters: [{ authors: ['pubkey1'], kinds: [1], limit: 10 }],
     relays: ['wss://relay.damus.io'],
+    filters: [{ authors: ['pubkey1'], kinds: [1], limit: 10 }],
     options: {
       enabled: toggle,
       force: false,
@@ -102,7 +102,7 @@ const MyComponent = () => {
 };
 ```
 
-The `options` object accepts the following properties:
+The optional `options` object accepts the following properties:
 
 - `enabled`: A boolean flag indicating whether the subscription is enabled. If set to `false`, the subscription will not be created.
 
@@ -121,6 +121,103 @@ The `options` object accepts the following properties:
   ```
   Default is `500`
   ```
+
+### Example 3: Using multiple subscriptions in a single component:
+
+```jsx
+import { useNostrSubscribe } from 'nostr-hooks';
+
+const RELAYS = ['wss://relay.damus.io'];
+
+const MyComponent = () => {
+  const { events: metadataEvents } = useNostrSubscribe({
+    relays: RELAYS,
+    filters: [{ authors: ['pubkey'], kinds: [0] }],
+  });
+
+  const { events: noteEvents } = useNostrSubscribe({
+    relays: RELAYS,
+    filters: [{ authors: ['pubkey'], kinds: [1], limit: 10 }],
+  });
+
+  return (
+    <>
+      <ul>
+        {metadataEvents.map((event) => (
+          <li key={event.id}>
+            <p>{event.pubkey}</p>
+            <p>{event.content}</p>
+          </li>
+        ))}
+      </ul>
+
+      <ul>
+        {noteEvents.map((event) => (
+          <li key={event.id}>
+            <p>{event.pubkey}</p>
+            <p>{event.content}</p>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+};
+```
+
+The `useNostrSubscribe` hook can be used multiple times in a single component. Nostr-Hooks batches all subscriptions into a single subscription request, and delivers only the events that each hook needs.
+
+### Example 4: Using subscriptions in multiple components:
+
+```jsx
+import { useNostrSubscribe } from 'nostr-hooks';
+
+const App = () => {
+  return (
+    <>
+      <ComponentA />
+      <ComponentB />
+    </>
+  );
+};
+
+const ComponentA = () => {
+  const { events } = useNostrSubscribe({
+    relays: ['wss://relay.damus.io'],
+    filters: [{ authors: ['pubkey'], kinds: [0] }],
+  });
+
+  return (
+    <ul>
+      {events.map((event) => (
+        <li key={event.id}>
+          <p>{event.pubkey}</p>
+          <p>{event.kind}</p>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+const ComponentB = () => {
+  const { events } = useNostrSubscribe({
+    relays: ['wss://relay.damus.io'],
+    filters: [{ authors: ['pubkey'], kinds: [1], limit: 10 }],
+  });
+
+  return (
+    <ul>
+      {events.map((event) => (
+        <li key={event.id}>
+          <p>{event.pubkey}</p>
+          <p>{event.content}</p>
+        </li>
+      ))}
+    </ul>
+  );
+};
+```
+
+The `useNostrSubscribe` hook can be used in multiple components. Nostr-Hooks batches all subscriptions from all components into a single subscription request, and delivers only the events that each component needs.
 
 ## Contributing
 
