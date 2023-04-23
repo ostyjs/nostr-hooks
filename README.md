@@ -1,6 +1,6 @@
 # Nostr-Hooks
 
-React hooks for developing [Nostr](https://github.com/fiatjaf/nostr) clients.
+React hooks for developing [Nostr](https://github.com/fiatjaf/nostr) clients. It's simple yet intelligent.
 
 Nostr-Hooks is a library of React hooks designed to simplify the process of interacting with the Nostr protocol in real-time web applications. It provides an easy-to-use interface with low bandwidth consumption and high performance, allowing developers to quickly integrate Nostr into their projects and build responsive, real-time applications.
 
@@ -10,9 +10,9 @@ Nostr-Hooks is a library of React hooks designed to simplify the process of inte
 - Creates a single connection to each Nostr relay at a time and reuses it for all subscriptions, reducing network overhead.
 - Automatically manages subscriptions from multiple components and delivers only the events that each component needs.
 - Automatically batches multiple subscriptions from different components into a single subscription request, further reducing network overhead.
-- Inteligently merges filters into a unique set of filters, reducing the load on the Nostr relays.
+- Intelligently merges filters into a unique set of filters, reducing the load on the Nostr relays.
 - Minimizes re-renders by updating only the events that have changed, improving application performance.
-- Accepts an options object, allowing users to configure various options such as whether the subscription is enabled, whether to force immediate subscription, and the batching interval.
+- Accepts an options object, allowing users to configure various options such as whether the subscription is enabled, whether to force immediate subscription, whether to invalidate existing events, and the batching interval.
 - Automatically cleans up subscriptions and garbage events when a component unmounts, preventing memory leaks.
 
 ## Installation
@@ -57,7 +57,7 @@ The `useNostrSubscribe` hook takes an object with three optional parameters:
 
 - `filters`: An array of filters to apply to the subscription.
 - `relays`: An array of Nostr relay URLs to use for the subscription.
-- `options`: An optional object containing additional options to pass to the Nostr client.
+- `options`: An optional object containing additional options for fine-tuning the subscription.
 
 The hook returns an object with two properties:
 
