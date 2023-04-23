@@ -7,7 +7,7 @@ import { mergeFilters } from '../utils';
 import { useNostrSubscribe } from '..';
 
 describe('mergeFilters', () => {
-  it('merge filters when they have the same properties', () => {
+  it('merges filters when they have the same properties', () => {
     const filters: Filter[] = [{ authors: ['author1'] }, { authors: ['author2'] }];
     const mergedFilters = mergeFilters(filters);
     expect(mergedFilters).toEqual([{ authors: ['author1', 'author2'] }]);
@@ -25,7 +25,7 @@ describe('mergeFilters', () => {
     expect(mergedFilters).toEqual(filters);
   });
 
-  it('merge filters when they have same kinds', () => {
+  it('merges filters when they have same kinds', () => {
     const filters: Filter[] = [
       { authors: ['author1'], kinds: [0, 1] },
       { authors: ['author2'], kinds: [0, 1] },
@@ -34,7 +34,17 @@ describe('mergeFilters', () => {
     expect(mergedFilters).toEqual([{ authors: ['author1', 'author2'], kinds: [0, 1] }]);
   });
 
-  it('does not merge filters when they have different kinds', () => {
+  // [TODO]
+  // it('merges filters when they have different kinds but same authors and ids and tags', () => {
+  //   const filters: Filter[] = [
+  //     { authors: ['author1'], kinds: [0] },
+  //     { authors: ['author1'], kinds: [1] },
+  //   ];
+  //   const mergedFilters = mergeFilters(filters);
+  //   expect(mergedFilters).toEqual([{ authors: ['author1'], kinds: [0, 1] }]);
+  // });
+
+  it('does not merge filters when they have different kinds and different authors or ids or tags', () => {
     const filters: Filter[] = [
       { authors: ['author1'], kinds: [0] },
       { authors: ['author2'], kinds: [1] },
@@ -43,7 +53,7 @@ describe('mergeFilters', () => {
     expect(mergedFilters).toEqual(filters);
   });
 
-  it('merge filters when they have same limit', () => {
+  it('merges filters when they have same limit', () => {
     const filters: Filter[] = [
       { authors: ['author1'], limit: 10 },
       { authors: ['author2'], limit: 10 },
@@ -61,7 +71,7 @@ describe('mergeFilters', () => {
     expect(mergedFilters).toEqual(filters);
   });
 
-  it('merge filters when they have same until', () => {
+  it('merges filters when they have same until', () => {
     const filters: Filter[] = [
       { authors: ['author1'], until: 10 },
       { authors: ['author2'], until: 10 },
@@ -79,7 +89,7 @@ describe('mergeFilters', () => {
     expect(mergedFilters).toEqual(filters);
   });
 
-  it('merge filters when they have same since', () => {
+  it('merges filters when they have same since', () => {
     const filters: Filter[] = [
       { authors: ['author1'], since: 10 },
       { authors: ['author2'], since: 10 },
@@ -97,7 +107,7 @@ describe('mergeFilters', () => {
     expect(mergedFilters).toEqual(filters);
   });
 
-  it('remove duplicates when merging filters', () => {
+  it('removes duplicates when merging filters', () => {
     const filters: Filter[] = [
       { authors: ['author1', 'author2'] },
       { authors: ['author2', 'author3'] },
@@ -106,13 +116,13 @@ describe('mergeFilters', () => {
     expect(mergedFilters).toEqual([{ authors: ['author1', 'author2', 'author3'] }]);
   });
 
-  it('remove filters if they have empty properties', () => {
+  it('removes filters if they have empty properties', () => {
     const filters: Filter[] = [{ authors: [] }, { authors: ['author2'] }];
     const mergedFilters = mergeFilters(filters);
     expect(mergedFilters).toEqual([{ authors: ['author2'] }]);
   });
 
-  it('handle complex filters', () => {
+  it('handles complex filters', () => {
     const filters: Filter[] = [
       { authors: ['author1'], kinds: [0], since: 10 },
       { authors: ['author2'], kinds: [3] },
