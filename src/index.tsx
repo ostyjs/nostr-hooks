@@ -14,10 +14,11 @@ export const useNostrSubscribe = ({ filters, relays, options }: Config) => {
   const subId = useRef(generateSubId());
   const shouldCreateSub = useRef(true);
 
-  const handleSub = useNostrStore((store) => store.handleNewSub);
-  const handleUnSub = useNostrStore((store) => store.unSub);
-  const sub = useNostrStore((store) => store.subMap.get(subId.current));
-  const { eose } = sub || {};
+  const handleSub = useNostrStore(useCallback((store) => store.handleNewSub, []));
+  const handleUnSub = useNostrStore(useCallback((store) => store.unSub, []));
+  const sub = useNostrStore(
+    useCallback((store) => store.subMap.get(subId.current), [subId.current])
+  );
   const events = useNostrStore(
     useCallback(
       (store) => {
@@ -68,7 +69,7 @@ export const useNostrSubscribe = ({ filters, relays, options }: Config) => {
 
   return {
     events,
-    eose,
+    eose: sub?.eose || false,
   };
 };
 
