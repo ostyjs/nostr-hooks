@@ -19,10 +19,43 @@ describe('mergeFilters', () => {
     expect(mergedFilters).toEqual(filters);
   });
 
-  it('does not merge filters when they have search property', () => {
-    const filters: Filter[] = [{ authors: ['author1'] }, { search: 'search1' }];
+  it('does not merge filters when they have just search property and their values are different', () => {
+    const filters: Filter[] = [{ search: 'search1' }, { search: 'search2' }];
     const mergedFilters = mergeFilters(filters);
     expect(mergedFilters).toEqual(filters);
+  });
+
+  it('merges filters when they have just search property and their values are the same', () => {
+    const filters: Filter[] = [{ search: 'search1' }, { search: 'search1' }];
+    const mergedFilters = mergeFilters(filters);
+    expect(mergedFilters).toEqual([{ search: 'search1' }]);
+  });
+
+  it('does not merge filters when they have search property besides others', () => {
+    const filters: Filter[] = [
+      { authors: ['author1'], search: 'search1' },
+      { authors: ['author2'], search: 'search1' },
+    ];
+    const mergedFilters = mergeFilters(filters);
+    expect(mergedFilters).toEqual(filters);
+  });
+
+  it('does not merge filters when they have limit property and others are different', () => {
+    const filters: Filter[] = [
+      { authors: ['author1'], limit: 10 },
+      { authors: ['author2'], limit: 10 },
+    ];
+    const mergedFilters = mergeFilters(filters);
+    expect(mergedFilters).toEqual(filters);
+  });
+
+  it('merges filters when they have limit property but others are the same', () => {
+    const filters: Filter[] = [
+      { authors: ['author1'], limit: 10 },
+      { authors: ['author1'], limit: 10 },
+    ];
+    const mergedFilters = mergeFilters(filters);
+    expect(mergedFilters).toEqual([{ authors: ['author1'], limit: 10 }]);
   });
 
   it('merges filters when they have same kinds', () => {
@@ -48,24 +81,6 @@ describe('mergeFilters', () => {
     const filters: Filter[] = [
       { authors: ['author1'], kinds: [0] },
       { authors: ['author2'], kinds: [1] },
-    ];
-    const mergedFilters = mergeFilters(filters);
-    expect(mergedFilters).toEqual(filters);
-  });
-
-  it('merges filters when they have same limit', () => {
-    const filters: Filter[] = [
-      { authors: ['author1'], limit: 10 },
-      { authors: ['author2'], limit: 10 },
-    ];
-    const mergedFilters = mergeFilters(filters);
-    expect(mergedFilters).toEqual([{ authors: ['author1', 'author2'], limit: 10 }]);
-  });
-
-  it('does not merge filters when they have different limit', () => {
-    const filters: Filter[] = [
-      { authors: ['author1'], limit: 10 },
-      { authors: ['author2'], limit: 20 },
     ];
     const mergedFilters = mergeFilters(filters);
     expect(mergedFilters).toEqual(filters);
@@ -117,9 +132,14 @@ describe('mergeFilters', () => {
   });
 
   it('removes filters if they have empty properties', () => {
-    const filters: Filter[] = [{ authors: [] }, { authors: ['author2'] }];
+    const filters: Filter[] = [
+      { '#p': [] },
+      { '#p': ['author1'] },
+      { authors: [''] },
+      { authors: ['', 'author2'] },
+    ];
     const mergedFilters = mergeFilters(filters);
-    expect(mergedFilters).toEqual([{ authors: ['author2'] }]);
+    expect(mergedFilters).toEqual([{ '#p': ['author1'] }]);
   });
 
   it('handles complex filters', () => {
@@ -142,7 +162,8 @@ describe('mergeFilters', () => {
     expect(mergedFilters).toEqual([
       { authors: ['author1'], kinds: [0], since: 10 },
       { authors: ['author2', 'author3'], kinds: [3] },
-      { authors: ['author3', 'author4'], kinds: [1], limit: 10 },
+      { authors: ['author3'], kinds: [1], limit: 10 },
+      { authors: ['author4'], kinds: [1], limit: 10 },
       { authors: ['author5'], kinds: [0, 1, 3] },
       { ids: ['id1', 'id2', 'id3', 'id4'], kinds: [9731] },
       { ids: ['id4', 'id5'], kinds: [7] },
