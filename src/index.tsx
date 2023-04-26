@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { matchFilters } from 'nostr-tools';
+import { Event } from 'nostr-tools';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { useNostrStore } from './store';
 
@@ -11,39 +11,60 @@ export * from './types';
 export * as utils from './utils';
 
 export const useNostrSubscribe = ({ filters, relays, options }: Config) => {
-  const subId = useRef<string>(generateSubId());
+  const subId = useRef(generateSubId());
+  const shouldCreateSub = useRef(true);
 
-  const sub = useNostrStore((store) => store.handleNewSub);
-  const unSub = useNostrStore((store) => store.unSub);
-  const eose = useNostrStore((store) => store.subMap[subId.current]?.eose);
+  const handleSub = useNostrStore((store) => store.handleNewSub);
+  const handleUnSub = useNostrStore((store) => store.unSub);
+  const sub = useNostrStore((store) => store.subMap.get(subId.current));
+  const { eose } = sub || {};
   const events = useNostrStore(
-    (store) => store.events.filter((event) => matchFilters(filters, event)),
-    (prev, next) => {
-      const matchingPrev = prev.filter((event) => matchFilters(filters, event));
-      const matchingNext = next.filter((event) => matchFilters(filters, event));
+    useCallback(
+      (store) => {
+        const subscribedEvents = [] as Event[];
+        store.eventMap.forEach((subIds, event) => {
+          if (subIds.has(subId.current)) {
+            subscribedEvents.push(event);
+          }
+        });
 
-      if (matchingPrev.length !== matchingNext.length) {
-        return false;
-      }
-
-      // every event ids in next must be in prev to return true and avoid re-render
-      const isTheSame = matchingNext.every((nextEvent) => {
-        return matchingPrev.some((prevEvent) => prevEvent.id === nextEvent.id);
-      });
-
-      return isTheSame;
-    }
+        return subscribedEvents;
+      },
+      [subId.current]
+    )
   );
 
   useEffect(() => {
-    if (options?.enabled === undefined || options?.enabled === true) {
-      sub({ filters, relays, options }, subId.current);
+    if (options?.enabled === false) {
+      shouldCreateSub.current = false;
+      return;
     }
 
+    if (options?.invalidate === true) {
+      shouldCreateSub.current = true;
+      return;
+    }
+
+    if (sub) {
+      shouldCreateSub.current = false;
+      return;
+    }
+
+    shouldCreateSub.current = true;
+  }, [options?.enabled, options?.invalidate]);
+
+  useEffect(() => {
+    if (shouldCreateSub.current) {
+      shouldCreateSub.current = false;
+      handleSub({ filters, relays, options }, subId.current);
+    }
+  }, [shouldCreateSub.current, filters, relays, options, subId.current]);
+
+  useEffect(() => {
     return () => {
-      unSub(subId.current);
+      handleUnSub(subId.current);
     };
-  }, [options?.enabled]);
+  }, [handleUnSub, subId.current]);
 
   return {
     events,

@@ -1,150 +1,182 @@
 import _ from 'lodash';
-import { Event, Filter, SimplePool, matchFilters } from 'nostr-tools';
+import { Event, Filter, matchFilters, SimplePool } from 'nostr-tools';
 import { create } from 'zustand';
 
 import { mergeFilters } from '../utils';
 
 import { Config } from '../types';
 
-type Queue = Record<string, Config>;
-type SubMap = Record<string, { filters: Filter[]; eose: boolean }>;
+type EventMap = Map<Event, Set<string>>;
+type SubMap = Map<string, { filters: Filter[]; eose: boolean }>;
+type QueueMap = Map<string, Config>;
 
 interface State {
-  pool: SimplePool;
-  events: Event[];
-  queue: Queue;
+  eventMap: EventMap;
   isBatching: boolean;
+  isPurging: boolean;
+  pool: SimplePool;
+  queueMap: QueueMap;
   subMap: SubMap;
 }
 
 interface Actions {
-  unSub: (subId: string) => void;
-  purgeEvents: (subId: string, force?: boolean) => void;
-  setIsBatching: (isBatching: boolean) => void;
+  addEventAndInsertSubIds: (event: Event, subIds: string[]) => void;
   clearQueue: () => void;
-  addEvent: (event: Event) => void;
-  handlePoolSub: (config: Config, subIds: string[]) => void;
-  processQueue: () => void;
-  addToQueue: (config: Config, subId: string) => void;
-  setEoseBySubIds: (subIds: string[], eose: boolean) => void;
-  setEoseByFilters: (filters: Filter[], eose: boolean) => void;
-  addToSubList: (subId: string, filters: Filter[]) => void;
-  removeFromSubList: (subId: string) => void;
+  deleteAllEventsBySubId: (subId: string) => void;
+  deleteSubIdFromAllEvents: (subId: string) => void;
+  deleteSubIdFromSubMap: (subId: string) => void;
   handleNewSub: (config: Config, subId: string) => void;
+  handlePoolSub: (queueMap: QueueMap) => void;
+  insertIntoQueue: (config: Config, subId: string) => void;
+  insertSubIdToAnEvent: (subId: string, event: Event) => void;
+  insertToSubMap: (subId: string, filters: Filter[]) => void;
+  unSub: (subId: string) => void;
+  processQueue: () => void;
+  purgeEvents: () => void;
+  setIsBatching: (isBatching: boolean) => void;
+  setIsPurging: (isPurging: boolean) => void;
+  setEoseByFilters: (filters: Filter[], eose: boolean) => void;
+  setEoseBySubIds: (subIds: string[], eose: boolean) => void;
 }
 
 export const useNostrStore = create<State & Actions>()((set, get) => ({
-  pool: new SimplePool(),
-  events: [],
-  queue: {},
-  subMap: {},
+  eventMap: new Map(),
   isBatching: false,
-  setEoseBySubIds: (subIds, eose) => {
-    set((store) => ({
-      subMap: _.mapValues(store.subMap, (val, key) =>
-        subIds.includes(key) ? { ...val, eose } : val
-      ),
-    }));
-  },
-  setEoseByFilters: (filters, eose) => {
-    const subMap = get().subMap;
-    const subIds = _.keys(subMap);
-    const subIdsWithSameFilters = subIds.filter((subId) =>
-      _.isEqual(subMap[subId]?.filters, filters)
-    );
+  isPurging: false,
+  pool: new SimplePool(),
+  queueMap: new Map(),
+  subMap: new Map(),
+  addEventAndInsertSubIds: (event, subIds) =>
+    set((store) => {
+      const eventRef = store.eventMap.get(event);
+      eventRef
+        ? subIds.forEach((subId) => eventRef.add(subId))
+        : store.eventMap.set(event, new Set(subIds));
+      return { eventMap: store.eventMap };
+    }),
+  clearQueue: () => set({ queueMap: new Map() }),
+  deleteAllEventsBySubId: (subId) =>
+    set((store) => {
+      store.eventMap.forEach((subIds, event) => subIds.has(subId) && store.eventMap.delete(event));
+      return { eventMap: store.eventMap };
+    }),
+  deleteSubIdFromAllEvents: (subId) =>
+    set((store) => {
+      store.eventMap.forEach((subIds) => subIds.delete(subId));
+      return { eventMap: store.eventMap };
+    }),
+  deleteSubIdFromSubMap: (subId) =>
+    set((store) => {
+      store.subMap.delete(subId);
+      return { subMap: store.subMap };
+    }),
+  handleNewSub: ({ filters, relays, options }, subId) => {
+    get().insertToSubMap(subId, filters);
+    if (options?.invalidate) {
+      get().deleteAllEventsBySubId(subId);
+      get().setEoseByFilters(filters, false);
+    } else {
+      let alreadyHasEvents = false;
+      get().eventMap.forEach((__, event) => {
+        if (matchFilters(filters, event)) {
+          alreadyHasEvents = true;
+          get().insertSubIdToAnEvent(subId, event);
+        }
+      });
 
-    get().setEoseBySubIds(subIdsWithSameFilters, eose);
-  },
-  unSub: (subId) => {
-    get().purgeEvents(subId);
-    get().removeFromSubList(subId);
-  },
-  purgeEvents: (subId, force = false) => {
-    const subMap = get().subMap;
-    const purgingSub = subMap[subId];
-    if (!purgingSub) return;
-
-    const purgingFilters = purgingSub.filters;
-
-    if (!force) {
-      const foundAnotherSubWithSameFilters = _.find(
-        subMap,
-        (sub, key) => key !== subId && _.isEqual(sub.filters, purgingFilters)
-      );
-      if (foundAnotherSubWithSameFilters) return;
+      if (alreadyHasEvents) {
+        return;
+      }
     }
-
-    set((store) => ({
-      events: store.events.filter((event) => !matchFilters(purgingFilters, event)),
-    }));
-  },
-  setIsBatching: (isBatching) => set({ isBatching: isBatching }),
-  addToQueue: ({ filters, relays }, subId) => {
-    set((store) => ({ queue: { ...store.queue, [subId]: { filters, relays } } }));
-  },
-  clearQueue: () => set({ queue: {} }),
-  addEvent: (event) => {
-    const events = get().events;
-    if (_.find(events, (e) => _.isEqual(e, event))) {
+    const newQueueMap = new Map() as QueueMap;
+    newQueueMap.set(subId, { filters, relays });
+    if (options?.force) {
+      get().handlePoolSub(newQueueMap);
       return;
     }
-    set((store) => ({ events: [...store.events, event] }));
+    get().insertIntoQueue({ filters, relays }, subId);
+    if (get().isBatching === false) {
+      setTimeout(get().processQueue, options?.batchingInterval || 500);
+      get().setIsBatching(true);
+    }
   },
-  addToSubList: (subId, filters) => {
-    set((store) => ({
-      subMap: { ...store.subMap, [subId]: { filters, eose: false } },
-    }));
-  },
-  removeFromSubList: (subId) => {
-    set((store) => ({ subMap: _.omit(store.subMap, subId) }));
-  },
-  handlePoolSub: ({ filters, relays }, subIds) => {
+  handlePoolSub: (queueMap) => {
+    const subIds = [...queueMap.keys()];
+    const filters = [] as Filter[];
+    const relays = [] as string[];
+    queueMap.forEach((config) => {
+      filters.push(...config.filters);
+      relays.push(...config.relays);
+    });
+
     const pool = get().pool;
     const sub = pool.sub(_.uniq(relays), mergeFilters(filters));
-    sub.on('event', (event: Event) => get().addEvent(event));
+
+    sub.on('event', (event: Event) => {
+      queueMap.forEach((config, subId) => {
+        if (matchFilters(config.filters, event)) {
+          get().addEventAndInsertSubIds(event, [subId]);
+        }
+      });
+    });
+
     sub.on('eose', () => {
       sub.unsub();
       get().setEoseBySubIds(subIds, true);
     });
   },
+  insertIntoQueue: ({ filters, relays }, subId) =>
+    set((store) => {
+      store.queueMap.set(subId, { filters, relays });
+      return { queueMap: store.queueMap };
+    }),
+  insertSubIdToAnEvent: (subId, event) =>
+    set((store) => {
+      store.eventMap.get(event)?.add(subId);
+      return { eventMap: store.eventMap };
+    }),
+  insertToSubMap: (subId, filters) =>
+    set((store) => {
+      store.subMap.set(subId, { filters, eose: false });
+      return { subMap: store.subMap };
+    }),
+  unSub: (subId) => {
+    get().deleteSubIdFromAllEvents(subId);
+    get().deleteSubIdFromSubMap(subId);
+
+    if (get().isPurging === false) {
+      setTimeout(get().purgeEvents, 1000 * 10);
+      get().setIsPurging(true);
+    }
+  },
   processQueue: () => {
-    const queue = get().queue;
-    if (_.isEmpty(queue)) return;
+    const queueMap = get().queueMap;
 
-    const { filters, relays } = _.reduce(
-      queue,
-      (acc, { filters, relays }) => {
-        acc.filters.push(...filters);
-        acc.relays.push(...relays);
-        return acc;
-      },
-      { filters: [] as Filter[], relays: [] as string[] }
-    );
+    if (queueMap.size === 0) return;
 
-    get().handlePoolSub({ filters, relays }, _.keys(queue));
-    get().clearQueue();
     get().setIsBatching(false);
+    get().handlePoolSub(queueMap);
+    get().clearQueue();
   },
-  handleNewSub: ({ filters, relays, options }, subId) => {
-    if (options?.invalidate === undefined || options?.invalidate === false) {
-      const events = get().events;
-      const matchingEvents = events.filter((event) => matchFilters(filters, event));
-      if (matchingEvents.length) {
-        return;
-      }
-    }
+  purgeEvents: () => {
+    set((store) => {
+      store.eventMap.forEach((subIds, event) => subIds.size === 0 && store.eventMap.delete(event));
 
-    get().addToSubList(subId, filters);
-    get().purgeEvents(subId, true);
-    get().setEoseByFilters(filters, false);
-    if (options?.force) {
-      get().handlePoolSub({ filters, relays }, [subId]);
-      return;
-    }
-    get().addToQueue({ filters, relays }, subId);
-    if (!get().isBatching) {
-      get().setIsBatching(true);
-      setTimeout(get().processQueue, options?.batchingInterval || 500);
-    }
+      return { eventMap: store.eventMap };
+    });
+
+    get().setIsPurging(false);
   },
+  setIsBatching: (isBatching) => set({ isBatching: isBatching }),
+  setIsPurging: (isPurging) => set({ isPurging: isPurging }),
+  setEoseByFilters: (filters, eose) =>
+    set((store) => {
+      store.subMap.forEach((sub) => _.isEqual(sub.filters, filters) && (sub.eose = eose));
+      return { subMap: store.subMap };
+    }),
+  setEoseBySubIds: (subIds, eose) =>
+    set((store) => {
+      store.subMap.forEach((sub, subId) => subIds.includes(subId) && (sub.eose = eose));
+      return { subMap: store.subMap };
+    }),
 }));
