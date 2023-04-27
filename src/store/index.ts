@@ -30,13 +30,13 @@ interface Actions {
   insertIntoQueue: (config: Config, subId: string) => void;
   insertSubIdToAnEvent: (subId: string, event: Event) => void;
   insertToSubMap: (subId: string, filters: Filter[]) => void;
-  unSub: (subId: string) => void;
   processQueue: () => void;
   purgeEvents: () => void;
   setIsBatching: (isBatching: boolean) => void;
   setIsPurging: (isPurging: boolean) => void;
   setEoseByFilters: (filters: Filter[], eose: boolean) => void;
   setEoseBySubIds: (subIds: string[], eose: boolean) => void;
+  unSub: (subId: string) => void;
 }
 
 export const useNostrStore = create<State & Actions>()((set, get) => ({
@@ -140,15 +140,6 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
       store.subMap.set(subId, { filters, eose: false });
       return { subMap: store.subMap };
     }),
-  unSub: (subId) => {
-    get().deleteSubIdFromAllEvents(subId);
-    get().deleteSubIdFromSubMap(subId);
-
-    if (get().isPurging === false) {
-      setTimeout(get().purgeEvents, 1000 * 10);
-      get().setIsPurging(true);
-    }
-  },
   processQueue: () => {
     const queueMap = get().queueMap;
 
@@ -179,4 +170,13 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
       store.subMap.forEach((sub, subId) => subIds.includes(subId) && (sub.eose = eose));
       return { subMap: store.subMap };
     }),
+  unSub: (subId) => {
+    get().deleteSubIdFromAllEvents(subId);
+    get().deleteSubIdFromSubMap(subId);
+
+    if (get().isPurging === false) {
+      setTimeout(get().purgeEvents, 1000 * 10);
+      get().setIsPurging(true);
+    }
+  },
 }));
