@@ -1,8 +1,41 @@
 import _ from 'lodash';
-import { Filter } from 'nostr-tools';
+import {
+  Filter,
+  Event,
+  EventTemplate,
+  UnsignedEvent,
+  getEventHash,
+  getPublicKey,
+  signEvent,
+} from 'nostr-tools';
 
 export const generateSubId = () => {
   return Math.random().toString(36).substring(2);
+};
+
+export const signEventWithNip07 = async (eventTemplate: EventTemplate) => {
+  if (!(window as any).nostr) throw new Error('Nostr extension not found');
+
+  const signedEvent: Event = (await (window as any).nostr.signEvent(eventTemplate)) || undefined;
+
+  if (!signedEvent) throw new Error('Nostr extension failed to sign event');
+
+  return signedEvent;
+};
+
+export const signEventWithPrivateKey = (eventTemplate: EventTemplate, privateKey: string) => {
+  const unsignedEvent: UnsignedEvent = {
+    ...eventTemplate,
+    pubkey: getPublicKey(privateKey),
+  };
+
+  const signedEvent: Event = {
+    ...unsignedEvent,
+    id: getEventHash(unsignedEvent),
+    sig: signEvent(unsignedEvent, privateKey),
+  };
+
+  return signedEvent;
 };
 
 export const isFilterCorrupted = (filter: Filter) => {
