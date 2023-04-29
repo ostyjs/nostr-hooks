@@ -1,11 +1,11 @@
 import { Event } from 'nostr-tools';
 import { useCallback, useEffect, useRef } from 'react';
 
-import { Config } from '@/types';
+import { Config } from '../types';
 
-import { useNostrStore } from '@/store';
+import { useNostrStore } from '../store';
 
-import { generateSubId } from '@/utils';
+import { generateSubId } from '../utils';
 
 const useSubscribe = ({ filters, relays, options }: Config) => {
   const subId = useRef(generateSubId());
