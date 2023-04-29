@@ -1,16 +1,13 @@
 import { Event } from 'nostr-tools';
 import { useCallback, useEffect, useRef } from 'react';
 
-import { useNostrStore } from './store';
+import { Config } from '@/types';
 
-import { Config } from './types';
+import { useNostrStore } from '@/store';
 
-import { generateSubId } from './utils';
+import { generateSubId } from '@/utils';
 
-export * from './types';
-export * as utils from './utils';
-
-export const useNostrSubscribe = ({ filters, relays, options }: Config) => {
+const useSubscribe = ({ filters, relays, options }: Config) => {
   const subId = useRef(generateSubId());
   const shouldCreateSub = useRef(true);
 
@@ -73,6 +70,4 @@ export const useNostrSubscribe = ({ filters, relays, options }: Config) => {
   };
 };
 
-export const useNostrPublish = () => {
-  //
-};
+export default useSubscribe;
