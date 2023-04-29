@@ -25,15 +25,15 @@ npm install nostr-hooks
 
 ## Usage
 
-Here are some examples of how to use the `useNostrSubscribe` hook:
+Here are some examples of how to use the `useSubscribe` hook:
 
 ### Example 1: Basic usage:
 
 ```jsx
-import { useNostrSubscribe } from 'nostr-hooks';
+import { useSubscribe } from 'nostr-hooks';
 
 const MyComponent = () => {
-  const { events, eose } = useNostrSubscribe({
+  const { events, eose } = useSubscribe({
     relays: ['wss://relay.damus.io'],
     filters: [{ authors: ['pubkey1'], kinds: [0] }],
   });
@@ -53,7 +53,7 @@ const MyComponent = () => {
 };
 ```
 
-The `useNostrSubscribe` hook takes an object with three optional parameters:
+The `useSubscribe` hook takes an object with three optional parameters:
 
 - `filters`: An array of filters to apply to the subscription.
 - `relays`: An array of Nostr relay URLs to use for the subscription.
@@ -67,12 +67,12 @@ The hook returns an object with two properties:
 ### Example 2: Using Options object:
 
 ```jsx
-import { useNostrSubscribe } from 'nostr-hooks';
+import { useSubscribe } from 'nostr-hooks';
 
 const MyComponent = () => {
   const [toggle, setToggle] = useState(false);
 
-  const { events, eose } = useNostrSubscribe({
+  const { events, eose } = useSubscribe({
     relays: ['wss://relay.damus.io'],
     filters: [{ authors: ['pubkey1'], kinds: [1], limit: 10 }],
     options: {
@@ -134,17 +134,17 @@ The optional `options` object accepts the following properties:
 ### Example 3: Using multiple subscriptions in a single component:
 
 ```jsx
-import { useNostrSubscribe } from 'nostr-hooks';
+import { useSubscribe } from 'nostr-hooks';
 
 const RELAYS = ['wss://relay.damus.io'];
 
 const MyComponent = () => {
-  const { events: metadataEvents } = useNostrSubscribe({
+  const { events: metadataEvents } = useSubscribe({
     relays: RELAYS,
     filters: [{ authors: ['pubkey'], kinds: [0] }],
   });
 
-  const { events: noteEvents } = useNostrSubscribe({
+  const { events: noteEvents } = useSubscribe({
     relays: RELAYS,
     filters: [{ authors: ['pubkey'], kinds: [1], limit: 10 }],
   });
@@ -173,12 +173,12 @@ const MyComponent = () => {
 };
 ```
 
-The `useNostrSubscribe` hook can be used multiple times in a single component. Nostr-Hooks batches all subscriptions into a single subscription request, and delivers only the events that each hook needs.
+The `useSubscribe` hook can be used multiple times in a single component. Nostr-Hooks batches all subscriptions into a single subscription request, and delivers only the events that each hook needs.
 
 ### Example 4: Using subscriptions in multiple components:
 
 ```jsx
-import { useNostrSubscribe } from 'nostr-hooks';
+import { useSubscribe } from 'nostr-hooks';
 
 const App = () => {
   return (
@@ -190,7 +190,7 @@ const App = () => {
 };
 
 const ComponentA = () => {
-  const { events } = useNostrSubscribe({
+  const { events } = useSubscribe({
     relays: ['wss://relay.damus.io'],
     filters: [{ authors: ['pubkey'], kinds: [0] }],
   });
@@ -208,7 +208,7 @@ const ComponentA = () => {
 };
 
 const ComponentB = () => {
-  const { events } = useNostrSubscribe({
+  const { events } = useSubscribe({
     relays: ['wss://relay.damus.io'],
     filters: [{ authors: ['pubkey'], kinds: [1], limit: 10 }],
   });
@@ -226,7 +226,7 @@ const ComponentB = () => {
 };
 ```
 
-The `useNostrSubscribe` hook can be used in multiple components. Nostr-Hooks batches all subscriptions from all components into a single subscription request, and delivers only the events that each component needs.
+The `useSubscribe` hook can be used in multiple components. Nostr-Hooks batches all subscriptions from all components into a single subscription request, and delivers only the events that each component needs.
 
 ## Contributing
 

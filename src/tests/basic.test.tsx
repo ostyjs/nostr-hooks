@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, jest, beforeAll } from '@jest/globals'
 import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import { Filter } from 'nostr-tools';
 import { mergeFilters } from '../utils';
-import { useNostrSubscribe } from '..';
 
 describe('mergeFilters', () => {
   it('merges filters when they have the same properties', () => {
@@ -173,4 +172,6 @@ describe('mergeFilters', () => {
   });
 });
 
-describe('useNostrSubscribe', () => {});
+describe('useSubscribe', () => {});
+
+describe('usePublish', () => {});
