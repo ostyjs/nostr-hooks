@@ -25,9 +25,11 @@ npm install nostr-hooks
 
 ## Usage
 
+### Subscribe to events
+
 Here are some examples of how to use the `useSubscribe` hook:
 
-### Example 1: Basic usage:
+#### Example 1: Basic usage:
 
 ```jsx
 import { useSubscribe } from 'nostr-hooks';
@@ -64,7 +66,7 @@ The hook returns an object with two properties:
 - `events`: An array of Nostr events that match the filters and have been received from the relays.
 - `eose`: A boolean flag indicating whether the subscription has ended.
 
-### Example 2: Using Options object:
+#### Example 2: Using Options object:
 
 ```jsx
 import { useSubscribe } from 'nostr-hooks';
@@ -131,7 +133,7 @@ The optional `options` object accepts the following properties:
   Default is `false`
   ```
 
-### Example 3: Using multiple subscriptions in a single component:
+#### Example 3: Using multiple subscriptions in a single component:
 
 ```jsx
 import { useSubscribe } from 'nostr-hooks';
@@ -175,7 +177,7 @@ const MyComponent = () => {
 
 The `useSubscribe` hook can be used multiple times in a single component. Nostr-Hooks batches all subscriptions into a single subscription request, and delivers only the events that each hook needs.
 
-### Example 4: Using subscriptions in multiple components:
+#### Example 4: Using subscriptions in multiple components:
 
 ```jsx
 import { useSubscribe } from 'nostr-hooks';
@@ -228,9 +230,89 @@ const ComponentB = () => {
 
 The `useSubscribe` hook can be used in multiple components. Nostr-Hooks batches all subscriptions from all components into a single subscription request, and delivers only the events that each component needs.
 
+#### Example 5: Dependent subscriptions:
+
+```jsx
+import { useSubscribe } from 'nostr-hooks';
+
+const MyComponent = ({ noteId }: Params) => {
+  const { events } = useSubscribe({
+    relays: ['wss://relay.damus.io'],
+    filters: [{ ids: [noteId] }],
+    options: {
+      enabled: !!noteId,
+    },
+  });
+
+  return (
+    <>
+      <ul>
+        {events.map((event) => (
+          <li key={event.id}>
+            <p>{event.pubkey}</p>
+            <p>{event.content}</p>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+};
+```
+
+The `useSubscribe` hook can be used in a component that depends on a prop or state. In this example, the subscription waits for the `noteId` prop to be set before creating the subscription.
+
+### Publish new events
+
+The `usePublish` hook is used to publish a new event to the provided relays.
+
+#### Example 1: Publishing a new event using NIP-07
+
+```jsx
+import { usePublish } from 'nostr-hooks';
+
+const RELAYS = ['wss://relay.damus.io'];
+
+const MyComponent = () => {
+  const [content, setContent] = useState('');
+
+  const publish = usePublish(RELAYS);
+
+  const handleSend = async () => {
+    await publish({
+      kind: 1,
+      content,
+    });
+  };
+
+  return (
+    <>
+      <input type="text" value={content} onChange={(e) => setContent(e.target.value)} />
+
+      <button onClick={handleSend}>Publish Note</button>
+    </>
+  );
+};
+```
+
+The `usePublish` hook returns a function that can be used to publish a new event to the provided relays. This hook attach the current timestamp and then signs the event using [NIP-07](https://github.com/nostr-protocol/nips/blob/master/07.md) before publishing it to the relays.
+
+#### Example 2: Publishing a new event using private key
+
+```ts
+const publish = usePublish(RELAYS, PRIVATE_KEY);
+```
+
+The `usePublish` hook accepts an optional private key as the second argument. If the private key is provided, the hook will sign the event using the provided private key before publishing it to the relays. If the private key is not provided, the hook will sign the event using [NIP-07](https://github.com/nostr-protocol/nips/blob/master/07.md).
+
 ## Contributing
 
 We welcome contributions from the community! If you'd like to contribute to Nostr-Hooks, please refer to the [CONTRIBUTING.md](https://github.com/sepehr-safari/nostr-hooks/blob/master/CONTRIBUTING.md) file in the project's GitHub repository.
+
+## Donations
+
+If you'd like to support the development of Nostr-Hooks, please consider donating to the developer.
+
+- ⚡ Zap sats to [sepehr@getalby.com](sepehr@getalby.com)
 
 ## License
 
