@@ -80,13 +80,10 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
       get().setEoseByFilters(filters, false);
     } else {
       let alreadyHasEvents = false;
-      get().eventMap.forEach((subIds, event) => {
+      get().eventMap.forEach((__, event) => {
         if (matchFilters(filters, event)) {
           alreadyHasEvents = true;
-          let eose = true;
-          subIds.forEach((subId) => get().subMap.get(subId)?.eose === false && (eose = false));
           get().insertSubIdToAnEvent(subId, event);
-          get().setEoseBySubIds([subId], eose);
         }
       });
       if (alreadyHasEvents) {
