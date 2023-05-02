@@ -103,7 +103,7 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
       }
     }
     const newQueueMap = new Map() as QueueMap;
-    newQueueMap.set(subId, { filters, relays });
+    newQueueMap.set(subId, { filters, relays, options });
     if (options?.force) {
       get().handlePoolSub(newQueueMap);
       return;

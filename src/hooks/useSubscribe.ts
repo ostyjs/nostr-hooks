@@ -1,5 +1,5 @@
 import { Event } from 'nostr-tools';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Config } from '../types';
 
@@ -32,6 +32,14 @@ const useSubscribe = ({ filters, relays, options }: Config) => {
     )
   );
 
+  const invalidate = useCallback(() => {
+    shouldCreateSub.current = false;
+    handleSub(
+      { filters, relays, options: { ...options, invalidate: true, force: true } },
+      subId.current
+    );
+  }, [shouldCreateSub.current, filters, relays, options, handleSub, subId.current]);
+
   useEffect(() => {
     if (options?.enabled === false) {
       shouldCreateSub.current = false;
@@ -56,7 +64,7 @@ const useSubscribe = ({ filters, relays, options }: Config) => {
       shouldCreateSub.current = false;
       handleSub({ filters, relays, options }, subId.current);
     }
-  }, [shouldCreateSub.current, filters, relays, options, subId.current]);
+  }, [shouldCreateSub.current, filters, relays, options, handleSub, subId.current]);
 
   useEffect(() => {
     return () => {
@@ -67,6 +75,7 @@ const useSubscribe = ({ filters, relays, options }: Config) => {
   return {
     events,
     eose: sub?.eose || false,
+    invalidate,
   };
 };
 
