@@ -15,6 +15,7 @@ interface State {
   isBatching: boolean;
   isPurging: boolean;
   pool: SimplePool;
+  pubkey: string;
   queueMap: QueueMap;
   subMap: SubMap;
 }
@@ -32,10 +33,11 @@ interface Actions {
   insertToSubMap: (subId: string, filters: Filter[]) => void;
   processQueue: () => void;
   purgeEvents: () => void;
-  setIsBatching: (isBatching: boolean) => void;
-  setIsPurging: (isPurging: boolean) => void;
   setEoseByFilters: (filters: Filter[], eose: boolean) => void;
   setEoseBySubIds: (subIds: string[], eose: boolean) => void;
+  setPubkey: (pubkey: string) => void;
+  setIsBatching: (isBatching: boolean) => void;
+  setIsPurging: (isPurging: boolean) => void;
   unSub: (subId: string) => void;
 }
 
@@ -44,6 +46,7 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
   isBatching: false,
   isPurging: false,
   pool: new SimplePool(),
+  pubkey: '',
   queueMap: new Map(),
   subMap: new Map(),
   addEventAndInsertSubIds: (event, subIds) =>
@@ -83,7 +86,6 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
           get().insertSubIdToAnEvent(subId, event);
         }
       });
-
       if (alreadyHasEvents) {
         return;
       }
@@ -158,8 +160,6 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
 
     get().setIsPurging(false);
   },
-  setIsBatching: (isBatching) => set({ isBatching: isBatching }),
-  setIsPurging: (isPurging) => set({ isPurging: isPurging }),
   setEoseByFilters: (filters, eose) =>
     set((store) => {
       store.subMap.forEach((sub) => _.isEqual(sub.filters, filters) && (sub.eose = eose));
@@ -170,6 +170,9 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
       store.subMap.forEach((sub, subId) => subIds.includes(subId) && (sub.eose = eose));
       return { subMap: store.subMap };
     }),
+  setPubkey: (pubkey) => set({ pubkey }),
+  setIsBatching: (isBatching) => set({ isBatching }),
+  setIsPurging: (isPurging) => set({ isPurging }),
   unSub: (subId) => {
     get().deleteSubIdFromAllEvents(subId);
     get().deleteSubIdFromSubMap(subId);
