@@ -13,4 +13,5 @@ export interface Options {
   enabled?: boolean | undefined;
   force?: boolean | undefined;
   invalidate?: boolean | undefined;
+  closeAfterEose?: boolean | undefined;
 }

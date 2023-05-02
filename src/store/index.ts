@@ -108,18 +108,22 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
       get().handlePoolSub(newQueueMap);
       return;
     }
-    get().insertIntoQueue({ filters, relays }, subId);
+    get().insertIntoQueue({ filters, relays, options }, subId);
     if (get().isBatching === false) {
       setTimeout(get().processQueue, options?.batchingInterval || 500);
       get().setIsBatching(true);
     }
   },
   handlePoolSub: (queueMap) => {
+    let closeAfterEose = true;
     const filters = [] as Filter[];
     const relays = [] as string[];
     queueMap.forEach((config) => {
       filters.push(...config.filters);
       relays.push(...config.relays);
+      if (config.options?.closeAfterEose === false) {
+        closeAfterEose = false;
+      }
     });
 
     const pool = get().pool;
@@ -134,15 +138,17 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
     });
 
     sub.on('eose', () => {
-      sub.unsub();
+      if (closeAfterEose) {
+        sub.unsub();
+      }
       queueMap.forEach((config) => {
         get().setEoseByFilters(config.filters, true);
       });
     });
   },
-  insertIntoQueue: ({ filters, relays }, subId) =>
+  insertIntoQueue: (config, subId) =>
     set((store) => {
-      store.queueMap.set(subId, { filters, relays });
+      store.queueMap.set(subId, config);
       return { queueMap: store.queueMap };
     }),
   insertSubIdToAnEvent: (subId, event) =>
