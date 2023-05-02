@@ -13,7 +13,7 @@ const usePubkey = () => {
     if (localStoragePubkey) {
       setPubkey(localStoragePubkey);
     } else if ((window as any).nostr) {
-      (window as any).nostr.getPublickey().then((pubkey: string) => {
+      (window as any).nostr.getPublicKey().then((pubkey: string) => {
         localStorage.setItem('pubkey', pubkey);
         setPubkey(pubkey);
       });
