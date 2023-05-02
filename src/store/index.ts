@@ -80,13 +80,28 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
       get().setEoseByFilters(filters, false);
     } else {
       let alreadyHasEvents = false;
-      get().eventMap.forEach((__, event) => {
+      get().eventMap.forEach((subIds, event) => {
         if (matchFilters(filters, event)) {
           alreadyHasEvents = true;
+          let eose = true;
+          subIds.forEach((subId) => get().subMap.get(subId)?.eose === false && (eose = false));
           get().insertSubIdToAnEvent(subId, event);
+          get().setEoseBySubIds([subId], eose);
         }
       });
       if (alreadyHasEvents) {
+        let nextEose = true;
+        get().subMap.forEach(({ eose: __eose, filters: __filters }, __subId) => {
+          if (__subId === subId) return;
+
+          if (__eose === true) return;
+
+          if (_.isEqual(__filters, filters)) {
+            nextEose = false;
+            return;
+          }
+        });
+        get().setEoseBySubIds([subId], nextEose);
         return;
       }
     }
@@ -103,7 +118,6 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
     }
   },
   handlePoolSub: (queueMap) => {
-    const subIds = [...queueMap.keys()];
     const filters = [] as Filter[];
     const relays = [] as string[];
     queueMap.forEach((config) => {
@@ -124,7 +138,9 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
 
     sub.on('eose', () => {
       sub.unsub();
-      get().setEoseBySubIds(subIds, true);
+      queueMap.forEach((config) => {
+        get().setEoseByFilters(config.filters, true);
+      });
     });
   },
   insertIntoQueue: ({ filters, relays }, subId) =>
