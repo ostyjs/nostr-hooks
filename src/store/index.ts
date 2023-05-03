@@ -25,7 +25,7 @@ interface Actions {
   clearQueue: () => void;
   deleteSubIdFromAllEvents: (subId: string) => void;
   deleteSubIdFromSubMap: (subId: string) => void;
-  handleInvalidate: (filters: Filter[]) => void;
+  handleInvalidate: (subId: string, config: Config) => void;
   handleNewSub: (config: Config, subId: string) => void;
   handlePoolSub: (queueMap: QueueMap) => void;
   insertIntoQueue: (config: Config, subId: string) => void;
@@ -68,14 +68,15 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
       store.subMap.delete(subId);
       return { subMap: store.subMap };
     }),
-  handleInvalidate: (filters) =>
+  handleInvalidate: (subId, config) =>
     set((store) => {
-      store.setEoseByFilters(filters, false);
+      store.setEoseByFilters(config.filters, false);
 
       const newQueueMap = new Map() as QueueMap;
+      newQueueMap.set(subId, config);
 
       store.eventMap.forEach((subIds, event) => {
-        if (matchFilters(filters, event)) {
+        if (matchFilters(config.filters, event)) {
           store.eventMap.delete(event);
 
           subIds.forEach((subId) => {
@@ -94,7 +95,7 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
   handleNewSub: ({ filters, relays, options }, subId) => {
     get().insertToSubMap(subId, { filters, relays, options });
     if (options?.invalidate) {
-      get().handleInvalidate(filters);
+      get().handleInvalidate(subId, { filters, relays, options });
       return;
     }
     let alreadyHasEvents = false;

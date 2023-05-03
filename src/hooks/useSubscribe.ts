@@ -68,7 +68,7 @@ const useSubscribe = ({ filters, relays, options }: Config) => {
   return {
     events,
     eose: sub?.eose || false,
-    invalidate: () => handleInvalidate(filters),
+    invalidate: () => handleInvalidate(subId.current, { filters, relays, options }),
   };
 };
 
