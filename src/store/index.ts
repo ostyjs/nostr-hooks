@@ -21,6 +21,7 @@ interface State {
 }
 
 interface Actions {
+  publish: (relays: string[], event: Event) => Promise<void>;
   addEventAndInsertSubIds: (event: Event, subIds: string[]) => void;
   clearQueue: () => void;
   deleteSubIdFromAllEvents: (subId: string) => void;
@@ -49,6 +50,16 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
   pubkey: '',
   queueMap: new Map(),
   subMap: new Map(),
+  publish: (relays, event) => {
+    return new Promise<void>((resolve, reject) => {
+      try {
+        const pub = get().pool.publish(relays, event);
+        pub.on('ok', () => resolve());
+      } catch (error) {
+        reject(error);
+      }
+    });
+  },
   addEventAndInsertSubIds: (event, subIds) =>
     set((store) => {
       const eventRef = store.eventMap.get(event);

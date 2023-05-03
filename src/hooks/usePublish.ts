@@ -6,7 +6,7 @@ import { useNostrStore } from '../store';
 import { signEventWithNip07, signEventWithPrivateKey } from '../utils';
 
 const usePublish = (relays: string[], privateKey?: string) => {
-  const pool = useNostrStore(useCallback((store) => store.pool, []));
+  const storePublish = useNostrStore(useCallback((store) => store.publish, []));
 
   const publish = useCallback(
     (partialEvent: Partial<EventTemplate>) =>
@@ -31,16 +31,13 @@ const usePublish = (relays: string[], privateKey?: string) => {
             ? signEventWithPrivateKey(eventTemplate, privateKey)
             : await signEventWithNip07(eventTemplate);
 
-          const pub = pool.publish(relays, signedEvent);
-
-          pub.on('ok', () => {
-            resolve(signedEvent);
-          });
+          await storePublish(relays, signedEvent);
+          resolve(signedEvent);
         } catch (error) {
           reject(error);
         }
       }),
-    [relays, privateKey, pool]
+    [relays, privateKey, storePublish]
   );
 
   return publish;
