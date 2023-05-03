@@ -37,7 +37,7 @@ Here are some examples of how to use the `useSubscribe` hook:
 import { useSubscribe } from 'nostr-hooks';
 
 const MyComponent = () => {
-  const { events, eose } = useSubscribe({
+  const { events, eose, invalidate } = useSubscribe({
     relays: ['wss://relay.damus.io'],
     filters: [{ authors: ['pubkey1'], kinds: [0] }],
   });
@@ -63,10 +63,11 @@ The `useSubscribe` hook takes an object with three optional parameters:
 - `relays`: An array of Nostr relay URLs to use for the subscription.
 - `options`: An optional object containing additional options for fine-tuning the subscription.
 
-The hook returns an object with two properties:
+The hook returns an object with three properties:
 
 - `events`: An array of Nostr events that match the filters and have been received from the relays.
 - `eose`: A boolean flag indicating whether the subscription has ended.
+- `invalidate`: A function that can be used to invalidate the existing events for the provided filters and create a new subscription. This can be useful for refreshing the events for a set of filters.
 
 #### Example 2: Using Options object:
 
@@ -83,6 +84,8 @@ const MyComponent = () => {
       enabled: toggle,
       force: false,
       batchingInterval: 500,
+      invalidate: false,
+      closeAfterEose: true,
     },
   });
 
@@ -133,6 +136,12 @@ The optional `options` object accepts the following properties:
 
   ```
   Default is `false`
+  ```
+
+- `closeAfterEose`: A boolean flag indicating whether the connection to the relay should be closed after the subscription ends. If set to `false`, the connection will remain open and future events will be received.
+
+  ```
+  Default is `true`
   ```
 
 #### Example 3: Using multiple subscriptions in a single component:
