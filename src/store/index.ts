@@ -23,7 +23,6 @@ interface State {
 interface Actions {
   addEventAndInsertSubIds: (event: Event, subIds: string[]) => void;
   clearQueue: () => void;
-  deleteAllEventsBySubId: (subId: string) => void;
   deleteSubIdFromAllEvents: (subId: string) => void;
   deleteSubIdFromSubMap: (subId: string) => void;
   handleInvalidate: (filters: Filter[]) => void;
@@ -59,11 +58,6 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
       return { eventMap: store.eventMap };
     }),
   clearQueue: () => set({ queueMap: new Map() }),
-  deleteAllEventsBySubId: (subId) =>
-    set((store) => {
-      store.eventMap.forEach((subIds, event) => subIds.has(subId) && store.eventMap.delete(event));
-      return { eventMap: store.eventMap };
-    }),
   deleteSubIdFromAllEvents: (subId) =>
     set((store) => {
       store.eventMap.forEach((subIds) => subIds.delete(subId));
