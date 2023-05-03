@@ -7,7 +7,7 @@ import { mergeFilters } from '../utils';
 import { Config } from '../types';
 
 type EventMap = Map<Event, Set<string>>;
-type SubMap = Map<string, { filters: Filter[]; eose: boolean }>;
+type SubMap = Map<string, { config: Config; eose: boolean }>;
 type QueueMap = Map<string, Config>;
 
 interface State {
@@ -26,11 +26,12 @@ interface Actions {
   deleteAllEventsBySubId: (subId: string) => void;
   deleteSubIdFromAllEvents: (subId: string) => void;
   deleteSubIdFromSubMap: (subId: string) => void;
+  handleInvalidate: (filters: Filter[]) => void;
   handleNewSub: (config: Config, subId: string) => void;
   handlePoolSub: (queueMap: QueueMap) => void;
   insertIntoQueue: (config: Config, subId: string) => void;
   insertSubIdToAnEvent: (subId: string, event: Event) => void;
-  insertToSubMap: (subId: string, filters: Filter[]) => void;
+  insertToSubMap: (subId: string, config: Config) => void;
   processQueue: () => void;
   purgeEvents: () => void;
   setEoseByFilters: (filters: Filter[], eose: boolean) => void;
@@ -73,38 +74,60 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
       store.subMap.delete(subId);
       return { subMap: store.subMap };
     }),
-  handleNewSub: ({ filters, relays, options }, subId) => {
-    get().insertToSubMap(subId, filters);
-    if (options?.invalidate) {
-      get().deleteAllEventsBySubId(subId);
-      get().setEoseByFilters(filters, false);
-    } else {
-      let alreadyHasEvents = false;
-      get().eventMap.forEach((__, event) => {
+  handleInvalidate: (filters) =>
+    set((store) => {
+      store.setEoseByFilters(filters, false);
+
+      const newQueueMap = new Map() as QueueMap;
+
+      store.eventMap.forEach((subIds, event) => {
         if (matchFilters(filters, event)) {
-          alreadyHasEvents = true;
-          get().insertSubIdToAnEvent(subId, event);
+          store.eventMap.delete(event);
+
+          subIds.forEach((subId) => {
+            const sub = store.subMap.get(subId);
+            if (!sub) return;
+
+            newQueueMap.set(subId, sub.config);
+          });
         }
       });
-      if (alreadyHasEvents) {
-        let nextEose = true;
-        get().subMap.forEach(({ eose: __eose, filters: __filters }, __subId) => {
-          if (__subId === subId) return;
 
-          if (__eose === true) return;
+      store.handlePoolSub(newQueueMap);
 
-          if (_.isEqual(__filters, filters)) {
-            nextEose = false;
-            return;
-          }
-        });
-        get().setEoseBySubIds([subId], nextEose);
-        return;
-      }
+      return { eventMap: store.eventMap };
+    }),
+  handleNewSub: ({ filters, relays, options }, subId) => {
+    get().insertToSubMap(subId, { filters, relays, options });
+    if (options?.invalidate) {
+      get().handleInvalidate(filters);
+      return;
     }
-    const newQueueMap = new Map() as QueueMap;
-    newQueueMap.set(subId, { filters, relays, options });
+    let alreadyHasEvents = false;
+    get().eventMap.forEach((__, event) => {
+      if (matchFilters(filters, event)) {
+        alreadyHasEvents = true;
+        get().insertSubIdToAnEvent(subId, event);
+      }
+    });
+    if (alreadyHasEvents) {
+      let nextEose = true;
+      get().subMap.forEach(({ eose: __eose, config: { filters: __filters } }, __subId) => {
+        if (__subId === subId) return;
+
+        if (__eose === true) return;
+
+        if (_.isEqual(__filters, filters)) {
+          nextEose = false;
+          return;
+        }
+      });
+      get().setEoseBySubIds([subId], nextEose);
+      return;
+    }
     if (options?.force) {
+      const newQueueMap = new Map() as QueueMap;
+      newQueueMap.set(subId, { filters, relays, options });
       get().handlePoolSub(newQueueMap);
       return;
     }
@@ -156,9 +179,9 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
       store.eventMap.get(event)?.add(subId);
       return { eventMap: store.eventMap };
     }),
-  insertToSubMap: (subId, filters) =>
+  insertToSubMap: (subId, config) =>
     set((store) => {
-      store.subMap.set(subId, { filters, eose: false });
+      store.subMap.set(subId, { config, eose: false });
       return { subMap: store.subMap };
     }),
   processQueue: () => {
@@ -181,7 +204,7 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
   },
   setEoseByFilters: (filters, eose) =>
     set((store) => {
-      store.subMap.forEach((sub) => _.isEqual(sub.filters, filters) && (sub.eose = eose));
+      store.subMap.forEach((sub) => _.isEqual(sub.config.filters, filters) && (sub.eose = eose));
       return { subMap: store.subMap };
     }),
   setEoseBySubIds: (subIds, eose) =>
