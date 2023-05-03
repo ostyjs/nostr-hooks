@@ -68,30 +68,29 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
       store.subMap.delete(subId);
       return { subMap: store.subMap };
     }),
-  handleInvalidate: (subId, config) =>
+  handleInvalidate: (subId, config) => {
+    const newQueueMap = new Map() as QueueMap;
+    newQueueMap.set(subId, config);
+
     set((store) => {
-      store.setEoseByFilters(config.filters, false);
-
-      const newQueueMap = new Map() as QueueMap;
-      newQueueMap.set(subId, config);
-
-      store.eventMap.forEach((subIds, event) => {
+      store.eventMap.forEach((__, event) => {
         if (matchFilters(config.filters, event)) {
           store.eventMap.delete(event);
-
-          subIds.forEach((subId) => {
-            const sub = store.subMap.get(subId);
-            if (!sub) return;
-
-            newQueueMap.set(subId, sub.config);
-          });
         }
       });
 
-      store.handlePoolSub(newQueueMap);
+      store.subMap.forEach((sub, subId) => {
+        if (_.isEqual(sub.config.filters, config.filters)) {
+          sub.eose = false;
+          newQueueMap.set(subId, sub.config);
+        }
+      });
 
-      return { eventMap: store.eventMap };
-    }),
+      return { eventMap: store.eventMap, subMap: store.subMap };
+    });
+
+    get().handlePoolSub(newQueueMap);
+  },
   handleNewSub: ({ filters, relays, options }, subId) => {
     get().insertToSubMap(subId, { filters, relays, options });
     if (options?.invalidate) {
