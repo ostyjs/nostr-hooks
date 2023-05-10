@@ -4,6 +4,16 @@ React hooks for developing [Nostr](https://github.com/fiatjaf/nostr) clients. It
 
 Nostr-Hooks is a library of React hooks designed to simplify the process of interacting with the Nostr protocol in real-time web applications. It provides an easy-to-use interface with low bandwidth consumption and high performance, allowing developers to quickly integrate Nostr into their projects and build responsive, real-time applications.
 
+## Used by
+
+- [Nostribe](https://nostribe.com)
+- [New Iris](https://new.iris.to)
+- [Pinstr](https://pinstr.app)
+
+```
+Add your project here by submitting a PR!
+```
+
 ## Features
 
 - Provides a single instance of Nostr pool for the entire application, which is reused by all components.
