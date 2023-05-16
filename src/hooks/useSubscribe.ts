@@ -14,6 +14,7 @@ const useSubscribe = ({ filters, relays, options }: Config) => {
   const handleSub = useNostrStore(useCallback((store) => store.handleNewSub, []));
   const handleUnSub = useNostrStore(useCallback((store) => store.unSub, []));
   const handleInvalidate = useNostrStore(useCallback((store) => store.handleInvalidate, []));
+  const loadMore = useNostrStore(useCallback((store) => store.loadMore, []));
   const sub = useNostrStore(
     useCallback((store) => store.subMap.get(subId.current), [subId.current])
   );
@@ -69,6 +70,7 @@ const useSubscribe = ({ filters, relays, options }: Config) => {
     events,
     eose: sub?.eose || false,
     invalidate: () => handleInvalidate(subId.current, { filters, relays, options }),
+    loadMore: () => loadMore(subId.current),
   };
 };
 

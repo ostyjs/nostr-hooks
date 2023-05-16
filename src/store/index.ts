@@ -31,6 +31,7 @@ interface Actions {
   insertIntoQueue: (config: Config, subId: string) => void;
   insertSubIdToAnEvent: (subId: string, event: Event) => void;
   insertToSubMap: (subId: string, config: Config) => void;
+  loadMore: (subId: string) => void;
   processQueue: () => void;
   purgeEvents: () => void;
   setEoseByFilters: (filters: Filter[], eose: boolean) => void;
@@ -178,6 +179,26 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
       store.subMap.set(subId, { config, eose: false });
       return { subMap: store.subMap };
     }),
+  loadMore: (subId) => {
+    const config = get().subMap.get(subId)?.config;
+    if (!config) return;
+
+    const eventsOfThisSubId = [] as Event[];
+    get().eventMap.forEach((subIds, event) => subIds.has(subId) && eventsOfThisSubId.push(event));
+    const oldestEventTimestamp = _.min(eventsOfThisSubId.map((event) => event.created_at));
+    if (oldestEventTimestamp) {
+      config.filters = config.filters.map((filter) => ({
+        ...filter,
+        until: oldestEventTimestamp - 1,
+      }));
+    }
+
+    get().insertIntoQueue(config, subId);
+    if (get().isBatching === false) {
+      setTimeout(get().processQueue, config.options?.batchingInterval || 500);
+      get().setIsBatching(true);
+    }
+  },
   processQueue: () => {
     const queueMap = get().queueMap;
 
