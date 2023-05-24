@@ -25,6 +25,7 @@ interface Actions {
   clearQueue: () => void;
   deleteSubIdFromAllEvents: (subId: string) => void;
   deleteSubIdFromSubMap: (subId: string) => void;
+  handleCacheRefresh: (subId: string, config: Config) => void;
   handleInvalidate: (subId: string, config: Config) => void;
   handleNewSub: (config: Config, subId: string) => void;
   handlePoolSub: (queueMap: QueueMap) => void;
@@ -50,12 +51,17 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
   pubkey: '',
   queueMap: new Map(),
   subMap: new Map(),
-  addEventAndInsertSubIds: (event, subIds) =>
+  addEventAndInsertSubIds: (newEvent, newSubIds) =>
     set((store) => {
-      const eventRef = store.eventMap.get(event);
-      eventRef
-        ? subIds.forEach((subId) => eventRef.add(subId))
-        : store.eventMap.set(event, new Set(subIds));
+      let found = false;
+      store.eventMap.forEach((_subIds, _event) => {
+        if (_event.id === newEvent.id) {
+          found = true;
+          newSubIds.forEach((newSubId) => _subIds.add(newSubId));
+          return;
+        }
+      });
+      if (found === false) store.eventMap.set(newEvent, new Set(newSubIds));
       return { eventMap: store.eventMap };
     }),
   clearQueue: () => set({ queueMap: new Map() }),
@@ -69,9 +75,28 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
       store.subMap.delete(subId);
       return { subMap: store.subMap };
     }),
+  handleCacheRefresh: (subId, config) => {
+    get().insertIntoQueue(config, subId);
+
+    set((store) => {
+      store.subMap.forEach((sub, subId) => {
+        if (_.isEqual(sub.config.filters, config.filters)) {
+          sub.eose = false;
+
+          get().insertIntoQueue(sub.config, subId);
+        }
+      });
+
+      return { subMap: store.subMap };
+    });
+
+    if (get().isBatching === false) {
+      setTimeout(get().processQueue, config.options?.batchingInterval || 500);
+      get().setIsBatching(true);
+    }
+  },
   handleInvalidate: (subId, config) => {
-    const newQueueMap = new Map() as QueueMap;
-    newQueueMap.set(subId, config);
+    get().insertIntoQueue(config, subId);
 
     set((store) => {
       store.eventMap.forEach((__, event) => {
@@ -83,14 +108,17 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
       store.subMap.forEach((sub, subId) => {
         if (_.isEqual(sub.config.filters, config.filters)) {
           sub.eose = false;
-          newQueueMap.set(subId, sub.config);
+          get().insertIntoQueue(sub.config, subId);
         }
       });
 
       return { eventMap: store.eventMap, subMap: store.subMap };
     });
 
-    get().handlePoolSub(newQueueMap);
+    if (get().isBatching === false) {
+      setTimeout(get().processQueue, config.options?.batchingInterval || 500);
+      get().setIsBatching(true);
+    }
   },
   handleNewSub: ({ filters, relays, options }, subId) => {
     get().insertToSubMap(subId, { filters, relays, options });
@@ -106,6 +134,11 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
       }
     });
     if (alreadyHasEvents) {
+      if (options?.cacheRefresh) {
+        get().handleCacheRefresh(subId, { filters, relays, options });
+        return;
+      }
+
       let nextEose = true;
       get().subMap.forEach(({ eose: __eose, config: { filters: __filters } }, __subId) => {
         if (__subId === subId) return;
@@ -169,9 +202,14 @@ export const useNostrStore = create<State & Actions>()((set, get) => ({
       store.queueMap.set(subId, config);
       return { queueMap: store.queueMap };
     }),
-  insertSubIdToAnEvent: (subId, event) =>
+  insertSubIdToAnEvent: (newSubId, event) =>
     set((store) => {
-      store.eventMap.get(event)?.add(subId);
+      store.eventMap.forEach((_subIds, _event) => {
+        if (_event.id === event.id) {
+          _subIds.add(newSubId);
+          return;
+        }
+      });
       return { eventMap: store.eventMap };
     }),
   insertToSubMap: (subId, config) =>
