@@ -33,9 +33,7 @@ const usePublish = (relays: string[], privateKey?: string) => {
 
           const pub = pool.publish(relays, signedEvent);
 
-          pub.on('ok', () => {
-            resolve(signedEvent);
-          });
+          resolve(signedEvent);
         } catch (error) {
           reject(error);
         }
