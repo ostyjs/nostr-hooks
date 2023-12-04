@@ -6,7 +6,7 @@ import {
   UnsignedEvent,
   getEventHash,
   getPublicKey,
-  signEvent,
+  getSignature,
 } from 'nostr-tools';
 
 export const generateSubId = () => {
@@ -32,7 +32,7 @@ export const signEventWithPrivateKey = (eventTemplate: EventTemplate, privateKey
   const signedEvent: Event = {
     ...unsignedEvent,
     id: getEventHash(unsignedEvent),
-    sig: signEvent(unsignedEvent, privateKey),
+    sig: getSignature(unsignedEvent, privateKey),
   };
 
   return signedEvent;
