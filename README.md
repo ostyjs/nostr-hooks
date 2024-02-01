@@ -4,6 +4,16 @@ React hooks for developing [Nostr](https://github.com/fiatjaf/nostr) clients. It
 
 Nostr-Hooks is a stateful wrapper library of React hooks around [NDK](https://github.com/nostr-dev-kit/ndk), designed to simplify the process of interacting with the Nostr protocol in real-time web applications. It provides an easy-to-use interface with low bandwidth consumption and high performance, allowing developers to quickly integrate Nostr into their projects and build responsive, real-time applications.
 
+## Migrate to v2
+
+Nostr-Hooks v2 is a major release.
+
+- It replaces the `Zustand` store with the `React Context API`.
+  This means that now you need to wrap your application with the `NostrHooksContextProvider` component.
+
+- It replaces `nostr-tools` with `nostr-dev-kit (NDK)`.
+  This means that most of the functionalities like caching, batching, and merging filters are now handled by NDK and Nostr-Hooks is only responsible for managing the component state and subscriptions.
+
 ## Installation
 
 ```bash
@@ -25,7 +35,7 @@ npm install nostr-hooks
 
 > Nostr-Hooks is not a replacement for NDK. You may still need to install NDK and use it in your application.
 
-NDK is a powerful library with a lot of out-of-the-box features, like caching, batching, and merging filters. However, it's a stateless library and doesn't understand the React component lifecycle. This means that it's up to the developer to update the component state when new events arrive, and to unsubscribe from the subscription when the component unmounts. This can be a tedious and error-prone process, especially when scaling the application. Nostr-Hooks on the other hand, is a stateful library that manages the component state and subscriptions automatically, allowing the developer to focus on building and scaling the application.
+NDK is a powerful library (shout-out to [pablo](https://github.com/pablof7z)) with a lot of out-of-the-box features, like caching, batching, and merging filters. However, it's a stateless library and doesn't understand the React component lifecycle. This means that it's up to the developer to update the component state when new events arrive, and to unsubscribe from the subscription when the component unmounts. This can be a tedious and error-prone process, especially when scaling the application. Nostr-Hooks on the other hand, is a stateful wrapper library that manages the component state and subscriptions automatically, allowing the developer to focus on building and scaling the application.
 
 ## Usage
 
@@ -270,11 +280,15 @@ const MyComponent = () => {
 
 We welcome contributions from the community! If you'd like to contribute to Nostr-Hooks, please refer to the [CONTRIBUTING.md](https://github.com/sepehr-safari/nostr-hooks/blob/master/CONTRIBUTING.md) file in the project's GitHub repository.
 
+> You can also consider contributing to [NDK](https://github.com/nostr-dev-kit/ndk).
+
 ## Donations
 
 If you'd like to support the development of Nostr-Hooks, please consider donating to the developer.
 
 - ⚡ Zap sats to [sepehr@getalby.com](sepehr@getalby.com)
+
+> You can also consider supporting the [NDK](https://github.com/nostr-dev-kit/ndk).
 
 ## License
 
