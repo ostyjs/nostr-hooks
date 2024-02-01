@@ -1,5 +1,5 @@
 import { NDKEvent, NDKFilter, NDKSubscriptionOptions } from '@nostr-dev-kit/ndk';
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { NostrHooksContext } from '../../contexts';
 
@@ -39,10 +39,11 @@ export const useSubscribe = ({
   const canSubscribe =
     !!ndk && filters.length > 0 && enabled == true && subscription && !isSubscribed;
 
-  const unSubscribe = () => {
+  const unSubscribe = useCallback(() => {
     subscription?.stop();
+
     setIsSubscribed(false);
-  };
+  }, [subscription, setIsSubscribed]);
 
   useEffect(() => {
     if (!canSubscribe) return;
@@ -59,10 +60,6 @@ export const useSubscribe = ({
 
       opts?.closeOnEose && unSubscribe();
     });
-
-    return () => {
-      unSubscribe();
-    };
   }, [
     canSubscribe,
     subscription,
@@ -72,6 +69,12 @@ export const useSubscribe = ({
     setEvents,
     setEose,
   ]);
+
+  useEffect(() => {
+    return () => {
+      unSubscribe();
+    };
+  }, [unSubscribe]);
 
   return { events: sortedEvents, isSubscribed, eose, unSubscribe };
 };

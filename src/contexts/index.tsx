@@ -1,6 +1,6 @@
 import NDK, { NDKNip07Signer } from '@nostr-dev-kit/ndk';
 import NDKCacheAdapterDexie from '@nostr-dev-kit/ndk-cache-dexie';
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useEffect } from 'react';
 
 export type NostrHooksContextProps = { ndk?: NDK; relays?: string[] };
 
@@ -22,6 +22,12 @@ export const NostrHooksContextProvider = ({
   children,
   ndk = initialNDK,
   relays = initialRelays,
-}: NostrHooksContextProps & { children: React.ReactNode }) => (
-  <NostrHooksContext.Provider value={{ ndk, relays }}>{children}</NostrHooksContext.Provider>
-);
+}: NostrHooksContextProps & { children: React.ReactNode }) => {
+  useEffect(() => {
+    ndk?.connect();
+  }, [ndk]);
+
+  return (
+    <NostrHooksContext.Provider value={{ ndk, relays }}>{children}</NostrHooksContext.Provider>
+  );
+};
