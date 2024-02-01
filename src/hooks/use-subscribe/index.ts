@@ -26,8 +26,8 @@ export const useSubscribe = ({
 
   const { ndk } = useContext(NostrHooksContext);
 
-  const sortedEvents = useMemo(
-    () => (events ? events.sort((a, b) => b.created_at! - a.created_at!) : null),
+  const sortedEvents: NDKEvent[] = useMemo(
+    () => (events ? events.sort((a, b) => b.created_at! - a.created_at!) : []),
     [events]
   );
 
