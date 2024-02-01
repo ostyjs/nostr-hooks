@@ -1,6 +1,6 @@
 {
   "name": "nostr-hooks",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "description": "React hooks for developing Nostr web clients.",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -26,7 +26,7 @@
     "test": "jest",
     "format": "prettier --write .",
     "prepare": "npm run build",
-    "prepublishOnly": "npm test"
+    "prepublishOnly": "npm run build"
   },
   "jest": {
     "rootDir": ".",
