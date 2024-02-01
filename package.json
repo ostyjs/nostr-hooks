@@ -1,7 +1,7 @@
 {
   "name": "nostr-hooks",
-  "version": "2.0.2",
-  "description": "React hooks for developing Nostr web clients.",
+  "version": "2.0.3",
+  "description": "React hooks for developing Nostr clients.",
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -65,7 +65,7 @@
     "hooks"
   ],
   "author": "Sepehr Safari",
-  "license": "Public domain",
+  "license": "MIT",
   "devDependencies": {
     "@jest/globals": "^29.7.0",
     "@testing-library/react": "^14.2.0",
