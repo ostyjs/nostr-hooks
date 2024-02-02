@@ -1,5 +1,5 @@
-import { NDKEvent, NDKFilter, NDKSubscriptionOptions } from '@nostr-dev-kit/ndk';
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { NDKEvent, NDKFilter, NDKSubscription, NDKSubscriptionOptions } from '@nostr-dev-kit/ndk';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { NostrHooksContext } from '../../contexts';
 
@@ -20,7 +20,8 @@ export const useSubscribe = ({
   opts?: NDKSubscriptionOptions;
   enabled?: boolean;
 }) => {
-  const [isSubscribed, setIsSubscribed] = useState(false);
+  const subscription = useRef<NDKSubscription | undefined>(undefined);
+
   const [eose, setEose] = useState(false);
   const [events, setEvents] = useState<NDKEvent[]>([]);
 
@@ -31,50 +32,41 @@ export const useSubscribe = ({
     [events]
   );
 
-  const subscription = useMemo(
-    () => (ndk ? ndk.subscribe(filters, opts, undefined, false) : undefined),
-    [ndk, filters, opts]
-  );
-
   const canSubscribe =
-    !!ndk && filters.length > 0 && enabled == true && subscription && !isSubscribed;
+    !!ndk && filters.length > 0 && enabled == true && subscription.current === undefined;
 
-  const unSubscribe = useCallback(() => {
-    subscription?.stop();
+  const unSubscribe = () => {
+    subscription.current?.stop();
+    subscription.current = undefined;
+  };
 
-    setIsSubscribed(false);
-  }, [subscription, setIsSubscribed]);
+  const subscribe = () => {
+    if (!ndk) return;
 
-  useEffect(() => {
-    if (!canSubscribe) return;
-
-    setIsSubscribed(true);
     setEose(false);
 
-    subscription.start();
-    subscription.on('event', (event: NDKEvent) => {
+    subscription.current = ndk.subscribe(filters, opts);
+    subscription.current.start();
+    subscription.current.on('event', (event: NDKEvent) => {
       setEvents((prevEvents) => [...(prevEvents || []), event]);
     });
-    subscription.on('eose', () => {
+    subscription.current.on('eose', () => {
       setEose(true);
 
       opts?.closeOnEose && unSubscribe();
     });
-  }, [
-    canSubscribe,
-    subscription,
-    opts?.closeOnEose,
-    unSubscribe,
-    setIsSubscribed,
-    setEvents,
-    setEose,
-  ]);
+  };
+
+  useEffect(() => {
+    canSubscribe && subscribe();
+  }, [canSubscribe, subscribe]);
 
   useEffect(() => {
     return () => {
-      unSubscribe();
+      subscription.current?.stop();
+      subscription.current = undefined;
     };
-  }, [unSubscribe]);
+  }, []);
 
-  return { events: sortedEvents, isSubscribed, eose, unSubscribe };
+  return { events: sortedEvents, isSubscribed: !!subscription.current, eose, unSubscribe };
 };
