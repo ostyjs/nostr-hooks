@@ -19,6 +19,8 @@ export const useProfiles = ({
   const ndk = useNdk();
 
   useEffect(() => {
+    if (mutateOriginal == false && !ndk) return;
+
     _events.forEach((event) => {
       if (event.author.profile) return;
 
@@ -35,14 +37,14 @@ export const useProfiles = ({
       if (user.profile) return;
 
       if (mutateOriginal == false) {
-        user = new NDKUser({ pubkey: user.pubkey });
+        user = ndk!.getUser({ pubkey: user.pubkey });
       }
 
       user.fetchProfile().then(() => {
         setUsers((prev) => (prev.find((u) => u.pubkey == user.pubkey) ? prev : [...prev, user]));
       });
     });
-  }, [_events, _users, mutateOriginal, setEvents, setUsers]);
+  }, [ndk, _events, _users, mutateOriginal, setEvents, setUsers]);
 
   return { events, users };
 };
