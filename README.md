@@ -276,6 +276,39 @@ const MyComponent = () => {
 
 > There is also a `usePublish` hook that can be used to publish an existing NDK event.
 
+### Fetch Profiles
+
+The `useProfiles` hook is used to fetch profiles for a given set of events or users.
+
+> The default behavior is to mutate the original events or users with the fetched profiles. To prevent this, you can use the `mutateOrignal` option and set it to `false`.
+
+#### Example: Fetch profiles for a set of events:
+
+Consider a scenario where you have a list of events, and you want to fetch the profiles of the authors of those events.
+
+```jsx
+const MyComponent = () => {
+  const { events } = useSubscribe({ filters });
+
+  useProfiles({ type: 'events', events });
+
+  return (
+    <ul>
+      {events.map((event) => (
+        <li key={event.id}>
+          <p>{event.author.profile?.name}</p>
+          <p>{event.author.profile?.bio}</p>
+        </li>
+      ))}
+    </ul>
+  );
+};
+```
+
+The `useProfiles` hook will automatically fetch the profiles of the authors of the events, and mutate the original events with the fetched profiles. This means that the `author` property of each event will be updated with the fetched profile.
+
+> If you don't want to mutate the original events, you can use the `mutateOrignal` option and set it to `false`. In this case, the updated events will be returned from the `useProfiles` hook, and you can use them to render the UI.
+
 ## Contributing
 
 We welcome contributions from the community! If you'd like to contribute to Nostr-Hooks, please refer to the [CONTRIBUTING.md](https://github.com/sepehr-safari/nostr-hooks/blob/master/CONTRIBUTING.md) file in the project's GitHub repository.
