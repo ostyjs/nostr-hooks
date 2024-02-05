@@ -1,3 +1,4 @@
+export { useNdk } from './use-ndk';
 export { useNewEvent } from './use-new-event';
 export { useProfiles } from './use-profiles';
 export { usePublish } from './use-publish';
