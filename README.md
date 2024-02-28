@@ -321,6 +321,23 @@ const MyComponent = () => {
 };
 ```
 
+### Using a NIP-07 browser extension (e.g. Alby, nos2x)
+
+You can use the `useNip07` hook to update the current NDK instance with the NIP-07 browser extension's signer.
+This hook will automatically update the `existing NDK instance` with the signer from the NIP-07 browser extension, and will prompt the user to connect to the NIP-07 browser extension if they haven't already.
+
+```jsx
+import { useNip07 } from 'nostr-hooks';
+
+const MyComponent = () => {
+  useNip07();
+
+  // ...
+};
+```
+
+> You can use this hook in the root component of your application for the entire application, or you can use it in a specific component where you need the user pubkey. This will update the NDK instance in the entire application.
+
 ## Contributing
 
 We welcome contributions from the community! If you'd like to contribute to Nostr-Hooks, please refer to the [CONTRIBUTING.md](https://github.com/sepehr-safari/nostr-hooks/blob/master/CONTRIBUTING.md) file in the project's GitHub repository.
