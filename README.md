@@ -303,6 +303,24 @@ const MyComponent = () => {
 };
 ```
 
+### Getting the Active User Profile
+
+You can use the `useActiveUser` hook to get the active user's profile based on the current NDK instance and its signer.
+
+```jsx
+import { useActiveUser } from 'nostr-hooks';
+
+const MyComponent = () => {
+  const { activeUser } = useActiveUser();
+
+  return (
+    <div>
+      <p>{activeUser?.profile?.name}</p>
+    </div>
+  );
+};
+```
+
 ## Contributing
 
 We welcome contributions from the community! If you'd like to contribute to Nostr-Hooks, please refer to the [CONTRIBUTING.md](https://github.com/sepehr-safari/nostr-hooks/blob/master/CONTRIBUTING.md) file in the project's GitHub repository.
