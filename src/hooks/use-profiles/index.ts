@@ -16,7 +16,7 @@ export const useProfiles = ({
   const [events, setEvents] = useState<NDKEvent[]>([]);
   const [users, setUsers] = useState<NDKUser[]>([]);
 
-  const ndk = useNdk();
+  const { ndk } = useNdk();
 
   useEffect(() => {
     if (mutateOriginal == false && !ndk) return;

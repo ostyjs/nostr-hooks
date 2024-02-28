@@ -1,7 +1,6 @@
 import { NDKEvent } from '@nostr-dev-kit/ndk';
-import { useContext } from 'react';
 
-import { NostrHooksContext } from '../../contexts';
+import { useNdk } from '../use-ndk';
 
 /**
  * Hook for publishing an NDK event.
@@ -9,7 +8,7 @@ import { NostrHooksContext } from '../../contexts';
  * @returns An object containing the `publish` function.
  */
 export const usePublish = () => {
-  const { ndk } = useContext(NostrHooksContext);
+  const { ndk } = useNdk();
 
   /**
    * Publishes an NDK event.

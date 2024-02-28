@@ -1,10 +1,9 @@
 import { NDKEvent } from '@nostr-dev-kit/ndk';
-import { useContext } from 'react';
 
-import { NostrHooksContext } from '../../contexts';
+import { useNdk } from '../use-ndk';
 
 export const useNewEvent = () => {
-  const { ndk } = useContext(NostrHooksContext);
+  const { ndk } = useNdk();
 
   const createNewEvent = () => new NDKEvent(ndk);
 

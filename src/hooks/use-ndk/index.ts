@@ -1,9 +1,9 @@
 import { useContext } from 'react';
 
-import { NostrHooksContext } from '../../contexts';
+import { NostrHooksContext, NostrHooksContextType } from '../../contexts';
 
 export const useNdk = () => {
-  const { ndk } = useContext(NostrHooksContext);
+  const { ndk, setNdk } = useContext(NostrHooksContext) as NostrHooksContextType;
 
-  return ndk;
+  return { ndk, setNdk };
 };

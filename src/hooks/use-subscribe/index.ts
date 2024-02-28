@@ -1,7 +1,7 @@
 import { NDKEvent, NDKFilter, NDKSubscription, NDKSubscriptionOptions } from '@nostr-dev-kit/ndk';
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { NostrHooksContext } from '../../contexts';
+import { useNdk } from '../use-ndk';
 
 /**
  * Hook for subscribing to events.
@@ -25,7 +25,7 @@ export const useSubscribe = ({
   const [eose, setEose] = useState(false);
   const [events, setEvents] = useState<NDKEvent[]>([]);
 
-  const { ndk } = useContext(NostrHooksContext);
+  const { ndk } = useNdk();
 
   const sortedEvents: NDKEvent[] = useMemo(
     () => (events ? events.sort((a, b) => b.created_at! - a.created_at!) : []),

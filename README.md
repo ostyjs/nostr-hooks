@@ -59,30 +59,6 @@ const App = () => {
 };
 ```
 
-<details>
-  <summary>
-    <strong>Advanced Usage</strong>
-  </summary>
-  
-  If you want to use a custom instance of NDK or a custom set of relays, you can pass them as props to the `NostrHooksContextProvider` component.
-
-```jsx
-import { NostrHooksContextProvider } from 'nostr-hooks';
-
-const App = () => {
-  return (
-    <NostrHooksContextProvider
-      ndk={new NDK(yourCustomConfig)}
-      relays={['yourCustomRelay1', 'yourCustomRelay2']}
-    >
-      <YourApp />
-    </NostrHooksContextProvider>
-  );
-};
-```
-
-</details>
-
 ### Subscribe to events
 
 Here are some examples of how to use the `useSubscribe` hook:
@@ -248,7 +224,7 @@ The `useSubscribe` hook can be used in a component that depends on a prop or sta
 
 ### Publish new events
 
-The `useNewEvent` hook is used to create a new NDK event, which can then be published using the `publish` method.
+The `useNewEvent` hook is used to create a new NDK event, which can then be published using the internal `publish` method.
 
 #### Example:
 
@@ -310,6 +286,22 @@ const MyComponent = () => {
 ```
 
 The `useProfiles` hook will automatically fetch the profiles of the authors of the events, and mutate the original events with the fetched profiles. This means that the `author` property of each event will be updated with the fetched profile.
+
+### Interact with NDK instance
+
+You can leverage `useNdk` hook to interact with the NDK instance. it returns the NDK instance itself and also a setter function (euqal to setState) to update the NDK instance and re-render the application.
+
+```jsx
+import { useNdk } from 'nostr-hooks';
+
+const MyComponent = () => {
+  const { ndk, setNdk } = useNdk();
+
+  const handleUpdateNdk = () => {
+    setNdk(new NDK({ ... }));
+  };
+};
+```
 
 ## Contributing
 

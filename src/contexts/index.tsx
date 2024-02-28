@@ -1,33 +1,20 @@
-import NDK, { NDKNip07Signer } from '@nostr-dev-kit/ndk';
-import NDKCacheAdapterDexie from '@nostr-dev-kit/ndk-cache-dexie';
-import { createContext, useContext, useEffect } from 'react';
+import NDK from '@nostr-dev-kit/ndk';
+import { createContext, useEffect, useState } from 'react';
 
-export type NostrHooksContextProps = { ndk?: NDK; relays?: string[] };
+const initialNdk = new NDK({ explicitRelayUrls: ['wss://nos.lol'] });
 
-const initialRelays = ['wss://nos.lol'];
-const initialNDK = new NDK({
-  signer: new NDKNip07Signer(),
-  explicitRelayUrls: initialRelays,
-  cacheAdapter: new NDKCacheAdapterDexie({ dbName: 'nostr-hooks-cache' }),
-});
+export type NostrHooksContextType = { ndk: NDK; setNdk: (ndk: NDK) => void };
 
-export const NostrHooksContext = createContext<NostrHooksContextProps>({
-  ndk: initialNDK,
-  relays: initialRelays,
-});
+export const NostrHooksContext = createContext<NostrHooksContextType | null>(null);
 
-export const useNostrHooksContext = () => useContext(NostrHooksContext);
+export const NostrHooksContextProvider = ({ children }: { children: React.ReactNode }) => {
+  const [ndk, setNdk] = useState<NDK>(initialNdk);
 
-export const NostrHooksContextProvider = ({
-  children,
-  ndk = initialNDK,
-  relays = initialRelays,
-}: NostrHooksContextProps & { children: React.ReactNode }) => {
   useEffect(() => {
-    ndk?.connect();
+    ndk.connect();
   }, [ndk]);
 
   return (
-    <NostrHooksContext.Provider value={{ ndk, relays }}>{children}</NostrHooksContext.Provider>
+    <NostrHooksContext.Provider value={{ ndk, setNdk }}>{children}</NostrHooksContext.Provider>
   );
 };
