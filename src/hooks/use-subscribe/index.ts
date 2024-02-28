@@ -1,4 +1,10 @@
-import { NDKEvent, NDKFilter, NDKSubscription, NDKSubscriptionOptions } from '@nostr-dev-kit/ndk';
+import {
+  NDKEvent,
+  NDKFilter,
+  NDKRelaySet,
+  NDKSubscription,
+  NDKSubscriptionOptions,
+} from '@nostr-dev-kit/ndk';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useNdk } from '../use-ndk';
@@ -15,10 +21,12 @@ export const useSubscribe = ({
   filters,
   opts,
   enabled = true,
+  relays = undefined,
 }: {
   filters: NDKFilter[];
   opts?: NDKSubscriptionOptions;
   enabled?: boolean;
+  relays?: string[] | undefined;
 }) => {
   const subscription = useRef<NDKSubscription | undefined>(undefined);
 
@@ -45,7 +53,10 @@ export const useSubscribe = ({
 
     setEose(false);
 
-    subscription.current = ndk.subscribe(filters, opts);
+    const relaySet =
+      relays && relays.length > 0 ? NDKRelaySet.fromRelayUrls(relays, ndk) : undefined;
+
+    subscription.current = ndk.subscribe(filters, opts, relaySet);
     subscription.current.start();
     subscription.current.on('event', (event: NDKEvent) => {
       setEvents((prevEvents) => [...(prevEvents || []), event]);

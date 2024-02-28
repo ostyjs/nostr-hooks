@@ -93,6 +93,7 @@ The `useSubscribe` hook takes an object with one mandatory and two optional para
 - `filters`: A mandatory array of filters that the subscription should be created for.
 - `enabled`: An optional boolean flag indicating whether the subscription is enabled. If set to `false`, the subscription will not be created automatically.
 - `opts`: An optional "NDK Subscription Options" object.
+- `relays`: An optional array of relay urls to use for the subscription. If not provided, the default relays will be used.
 
 > There are lots of options available for creating a subscription. [Read more about the NDK subscription options here](https://github.com/nostr-dev-kit/ndk)
 
