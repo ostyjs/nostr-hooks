@@ -1,5 +1,12 @@
 # Nostr-Hooks
 
+## 2.5.0
+
+### Breaking Changes
+
+- It reverts replacing `Zustand` store with the `React Context API`. Now, you don't need to wrap your application with the `NostrHooksContextProvider` component. but you need to initialize NostrHooks with `useNostrHooks` hook. You can find more information about this change in readme.
+- It reverts using `Immer` for updating NDK instance in `useNDK` hook, and uses `CloneDeep` from `lodash` to update the NDK instance.
+
 ## 2.4.0
 
 ### Breaking Changes
