@@ -290,16 +290,18 @@ The `useProfiles` hook will automatically fetch the profiles of the authors of t
 
 ### Interact with NDK instance
 
-You can leverage `useNdk` hook to interact with the NDK instance. it returns the NDK instance itself and also a setter function (euqal to setState) to update the NDK instance and re-render the application.
+You can leverage `useNdk` hook to interact with the NDK instance. it returns the NDK instance itself and also an updater (using [Immer](https://github.com/immerjs/use-immer)) to update the NDK instance and re-render the application.
 
 ```jsx
 import { useNdk } from 'nostr-hooks';
 
 const MyComponent = () => {
-  const { ndk, setNdk } = useNdk();
+  const { ndk, updateNdk } = useNdk();
 
-  const handleUpdateNdk = () => {
-    setNdk(new NDK({ ... }));
+  const handleUpdateNdk = ({ signer }: UpdateNDKParams) => {
+    updateNdk((draft) => {
+      draft.signer = signer;
+    });
   };
 };
 ```
