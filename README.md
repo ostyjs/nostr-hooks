@@ -66,13 +66,13 @@ You need to initialize NostrHooks in your root component in order to execute `nd
 import { useNostrHooks } from 'nostr-hooks';
 
 const App = () => {
-  useNostrHooks({ ndk: myCustomNdk });
+  useNostrHooks();
 
   return <YourApp />;
 };
 ```
 
-> You can also pass a custom NDK instance to the `useNostrHooks` hook. This is useful when you want to use a custom NDK instance with your own configuration.
+> You can also pass a custom NDK instance to the `useNostrHooks` hook. This is useful when you want to initiate your app with a custom NDK instance with your own configuration. You can also use other provided hooks like `useNdk` to interact with the NDK instance later.
 
 ### Subscribe to events
 
