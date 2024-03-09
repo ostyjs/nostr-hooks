@@ -1,5 +1,6 @@
 import NDK from '@nostr-dev-kit/ndk';
-import { createContext, useEffect, useState } from 'react';
+import { createContext, useEffect } from 'react';
+import { Updater, useImmer } from 'use-immer';
 
 const initialNdk = new NDK({
   explicitRelayUrls: [
@@ -18,18 +19,18 @@ const initialNdk = new NDK({
   ],
 });
 
-export type NostrHooksContextType = { ndk: NDK; setNdk: (ndk: NDK) => void };
+export type NostrHooksContextType = { ndk: NDK; updateNdk: Updater<NDK> };
 
 export const NostrHooksContext = createContext<NostrHooksContextType | null>(null);
 
 export const NostrHooksContextProvider = ({ children }: { children: React.ReactNode }) => {
-  const [ndk, setNdk] = useState<NDK>(initialNdk);
+  const [ndk, updateNdk] = useImmer<NDK>(initialNdk);
 
   useEffect(() => {
     ndk.connect();
   }, [ndk]);
 
   return (
-    <NostrHooksContext.Provider value={{ ndk, setNdk }}>{children}</NostrHooksContext.Provider>
+    <NostrHooksContext.Provider value={{ ndk, updateNdk }}>{children}</NostrHooksContext.Provider>
   );
 };

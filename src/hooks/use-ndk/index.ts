@@ -7,7 +7,7 @@ import { NostrHooksContext, NostrHooksContextType } from '../../contexts';
  * @returns An object containing the ndk instance and its setter.
  */
 export const useNdk = () => {
-  const { ndk, setNdk } = useContext(NostrHooksContext) as NostrHooksContextType;
+  const { ndk, updateNdk } = useContext(NostrHooksContext) as NostrHooksContextType;
 
-  return { ndk, setNdk };
+  return { ndk, updateNdk };
 };
