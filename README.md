@@ -8,6 +8,21 @@ React hooks for developing [Nostr](https://github.com/nostr-protocol/nostr) clie
 
 Nostr-Hooks is a stateful wrapper library of React hooks around [NDK](https://github.com/nostr-dev-kit/ndk), designed to simplify the process of interacting with the Nostr protocol in real-time web applications. It provides an easy-to-use interface with low bandwidth consumption and high performance, allowing developers to quickly integrate Nostr into their projects and build responsive, real-time applications.
 
+## Migrate to v2.5
+
+I knew that replacing Zustand with React Context API was a bad idea. So, I decided to revert it back to Zustand. This means that you no longer need to wrap your application with the `NostrHooksContextProvider` component.
+Now you just need to initialize NostrHooks in your root component with just a simple hook.
+
+```jsx
+import { useNostrHooks } from 'nostr-hooks';
+
+const App = () => {
+  useNostrHooks();
+
+  return <YourApp />;
+};
+```
+
 ## Migrate to v2
 
 Nostr-Hooks v2 is a major release.
@@ -43,21 +58,21 @@ NDK is a powerful library (shout-out to [pablo](https://github.com/pablof7z)) wi
 
 ## Usage
 
-### Add Context Provider
+### Initialize NostrHooks
 
-Wrap your application with the `NostrHooksContextProvider`. This will create a single instance of NDK for the entire application, which is reused by all components.
+You need to initialize NostrHooks in your root component in order to execute `ndk.connect()` automatically and create a single instance of Nostr pool for the entire application.
 
 ```jsx
-import { NostrHooksContextProvider } from 'nostr-hooks';
+import { useNostrHooks } from 'nostr-hooks';
 
 const App = () => {
-  return (
-    <NostrHooksContextProvider>
-      <YourApp />
-    </NostrHooksContextProvider>
-  );
+  useNostrHooks({ ndk: myCustomNdk });
+
+  return <YourApp />;
 };
 ```
+
+> You can also pass a custom NDK instance to the `useNostrHooks` hook. This is useful when you want to use a custom NDK instance with your own configuration.
 
 ### Subscribe to events
 
@@ -290,18 +305,20 @@ The `useProfiles` hook will automatically fetch the profiles of the authors of t
 
 ### Interact with NDK instance
 
-You can leverage `useNdk` hook to interact with the NDK instance. it returns the NDK instance itself and also an updater (using [Immer](https://github.com/immerjs/use-immer)) to update the NDK instance and re-render the application.
+You can leverage `useNdk` hook to interact with the NDK instance. it returns the NDK instance itself, and two setter functions for updating the NDK instance and the NDK signer.
 
 ```jsx
 import { useNdk } from 'nostr-hooks';
 
 const MyComponent = () => {
-  const { ndk, updateNdk } = useNdk();
+  const { ndk, setNdk, setSigner } = useNdk();
 
-  const handleUpdateNdk = ({ signer }: UpdateNDKParams) => {
-    updateNdk((draft) => {
-      draft.signer = signer;
-    });
+  const handleUpdateNdk = ({ ndk }: NDK) => {
+    setNdk(new NDK({ /* ... */ })); // this will replace the existing NDK instance with the new one
+  };
+
+  const handleUpdateNdkSigner = ({ signer }: NDKSigner) => {
+    setSigner(new NDKNip07Signer()); // this will keep the existing NDK instance and update its signer
   };
 };
 ```
@@ -343,7 +360,7 @@ const MyComponent = () => {
 
 ## Contributing
 
-We welcome contributions from the community! If you'd like to contribute to Nostr-Hooks, please refer to the [CONTRIBUTING.md](https://github.com/sepehr-safari/nostr-hooks/blob/master/CONTRIBUTING.md) file in the project's GitHub repository.
+We welcome contributions from the community! If you'd like to contribute to Nostr-Hooks, please refer to the [CONTRIBUTING.md](https://github.com/ostyjs/nostr-hooks/blob/master/CONTRIBUTING.md) file in the project's GitHub repository.
 
 > You can also consider contributing to [NDK](https://github.com/nostr-dev-kit/ndk).
 
@@ -357,7 +374,7 @@ If you'd like to support the development of Nostr-Hooks, please consider donatin
 
 ## License
 
-Nostr-Hooks is licensed under the MIT License. For more information, see the [LICENSE.md](https://github.com/sepehr-safari/nostr-hooks/blob/master/LICENSE.md) file in the project's GitHub repository.
+Nostr-Hooks is licensed under the MIT License. For more information, see the [LICENSE.md](https://github.com/ostyjs/nostr-hooks/blob/master/LICENSE.md) file in the project's GitHub repository.
 
 ## Contact
 
