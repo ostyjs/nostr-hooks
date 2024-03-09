@@ -1,13 +1,57 @@
-import { useContext } from 'react';
+import NDK, { NDKSigner } from '@nostr-dev-kit/ndk';
+import cloneDeep from 'lodash/cloneDeep';
+import { create } from 'zustand';
 
-import { NostrHooksContext, NostrHooksContextType } from '../../contexts';
+type State = {
+  ndk: NDK;
+};
+
+type Actions = {
+  setNdk: (ndk: NDK) => void;
+  setSigner: (signer: NDKSigner) => void;
+};
 
 /**
- * Custom hook for accessing the ndk instance and its setter.
- * @returns An object containing the ndk instance and its setter.
+ * Custom hook for managing NDK (Nostr Development Kit) instance.
  */
-export const useNdk = () => {
-  const { ndk, updateNdk } = useContext(NostrHooksContext) as NostrHooksContextType;
+export const useNdk = create<State & Actions>((set) => ({
+  /**
+   * The NDK instance.
+   */
+  ndk: new NDK({
+    explicitRelayUrls: [
+      'wss://nos.lol',
+      'wss://relay.nostr.band',
+      'wss://relay.damus.io',
+      'wss://relay.snort.social',
+      'wss://relayable.org',
+      'wss://offchain.pub',
+      'wss://purplepag.es',
+      'wss://relay.primal.net',
+      'wss://atlas.nostr.land',
+      'wss://eden.nostr.land',
+      'wss://relay.noswhere.com',
+      'wss://relay.nostr.bg',
+    ],
+  }),
 
-  return { ndk, updateNdk };
-};
+  /**
+   * Sets the NDK instance.
+   * @param ndk - The new NDK instance.
+   */
+  setNdk: (ndk) => ({ ndk }),
+
+  /**
+   * Sets the signer for the current NDK instance.
+   * @param signer - The new signer.
+   */
+  setSigner: (signer) =>
+    set((state) => {
+      if (!state.ndk) return state;
+
+      const ndk = cloneDeep(state.ndk);
+      ndk.signer = signer;
+
+      return { ...state, ndk };
+    }),
+}));
