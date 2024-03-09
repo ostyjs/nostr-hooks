@@ -4,13 +4,14 @@ import { useEffect } from 'react';
 import { useNdk } from '../use-ndk';
 
 export const useNip07 = () => {
-  const { ndk, updateNdk } = useNdk();
+  const { ndk, setSigner } = useNdk();
 
   useEffect(() => {
     if (ndk.signer && ndk.signer instanceof NDKNip07Signer) return;
 
-    updateNdk((draft) => {
-      draft.signer = new NDKNip07Signer();
+    const signer = new NDKNip07Signer();
+    signer.blockUntilReady().then(() => {
+      setSigner(signer);
     });
-  }, [ndk, updateNdk]);
+  }, [ndk, setSigner]);
 };
