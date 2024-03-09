@@ -1,16 +1,16 @@
-import NDK, { NDKNip07Signer } from '@nostr-dev-kit/ndk';
+import { NDKNip07Signer } from '@nostr-dev-kit/ndk';
 import { useEffect } from 'react';
 
 import { useNdk } from '../use-ndk';
 
 export const useNip07 = () => {
-  const { ndk, setNdk } = useNdk();
+  const { ndk, updateNdk } = useNdk();
 
   useEffect(() => {
     if (ndk.signer && ndk.signer instanceof NDKNip07Signer) return;
 
-    const signer = new NDKNip07Signer();
-
-    setNdk(new NDK({ ...ndk, signer }));
-  }, [ndk, setNdk]);
+    updateNdk((draft) => {
+      draft.signer = new NDKNip07Signer();
+    });
+  }, [ndk, updateNdk]);
 };
