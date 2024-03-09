@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 
 import { useNdk } from '../use-ndk';
 
-export const useNostrHooks = ({ initialNdk }: { initialNdk?: NDK | undefined }) => {
+export const useNostrHooks = (initialNdk?: NDK | undefined) => {
   const { ndk, setNdk } = useNdk();
 
   useEffect(() => {
