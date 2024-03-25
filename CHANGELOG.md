@@ -1,5 +1,9 @@
 # Nostr-Hooks
 
+## 2.6.0
+
+- Added `fetchProfiles` boolean to `useSubscribe` hook to fetch profiles on subscription.
+
 ## 2.5.0
 
 ### Breaking Changes

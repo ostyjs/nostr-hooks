@@ -15,6 +15,8 @@ import { useNdk } from '../use-ndk';
  * @param filters - An array of NDKFilter objects.
  * @param opts - Optional NDKSubscriptionOptions for configuring the subscription.
  * @param enabled - Optional boolean indicating whether the subscription is enabled. Default is true.
+ * @param relays - Optional array of relay URLs to use for this subscription.
+ * @param fetchProfiles - Optional boolean indicating whether to fetch profiles for the events. Default is false.
  * @returns An object containing the sorted events, subscription status, end of stream flag, and an unSubscribe function.
  */
 export const useSubscribe = ({
@@ -22,11 +24,13 @@ export const useSubscribe = ({
   opts,
   enabled = true,
   relays = undefined,
+  fetchProfiles = false,
 }: {
   filters: NDKFilter[];
   opts?: NDKSubscriptionOptions;
   enabled?: boolean;
   relays?: string[] | undefined;
+  fetchProfiles?: boolean;
 }) => {
   const subscription = useRef<NDKSubscription | undefined>(undefined);
 
@@ -59,7 +63,13 @@ export const useSubscribe = ({
     subscription.current = ndk.subscribe(filters, opts, relaySet);
     subscription.current.start();
     subscription.current.on('event', (event: NDKEvent) => {
-      setEvents((prevEvents) => [...(prevEvents || []), event]);
+      if (fetchProfiles && event.author.profile === undefined) {
+        event.author.fetchProfile().then(() => {
+          setEvents((prevEvents) => [...(prevEvents || []), event]);
+        });
+      } else {
+        setEvents((prevEvents) => [...(prevEvents || []), event]);
+      }
     });
     subscription.current.on('eose', () => {
       setEose(true);
