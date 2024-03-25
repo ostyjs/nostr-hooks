@@ -8,7 +8,7 @@ type State = {
 
 type Actions = {
   setNdk: (ndk: NDK) => void;
-  setSigner: (signer: NDKSigner) => void;
+  setSigner: (signer: NDKSigner | undefined) => void;
 };
 
 /**
