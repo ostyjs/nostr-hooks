@@ -26,11 +26,18 @@ Nostr-Hooks is a stateful wrapper library of React hooks around [NDK](https://gi
 - Minimizes re-renders by updating only the events that have changed, improving application performance.
 - Automatically cleans up subscriptions and garbage events when a component unmounts, preventing memory leaks.
 
-## Isn't nostr-tools or NDK enough? Why do we need Nostr-Hooks?
+<details>
+  <summary>
+    <b>
+      Isn't nostr-tools or NDK enough? Why do we need Nostr-Hooks?
+    </b>
+  </summary>
 
 Nostr-Hooks is not a replacement for NDK or nostr-tools. You may still need to install and use them in your application for some advanced low-level functionalities.
 As you may know NDK is a powerful library (shout-out to [pablo](https://github.com/pablof7z)) with a lot of out-of-the-box features, like caching, batching, and merging filters. However, it's a **stateless** library and doesn't understand the React component lifecycle. This means that it's up to the developer to update the component state when new events arrive, and to unsubscribe from the subscription when the component unmounts. This can be a tedious and error-prone process, especially when scaling the application. Nostr-Hooks on the other hand, is a stateful wrapper library that manages the component state and subscriptions automatically, allowing the developer to focus on building and scaling the application.
 Nostr-Hooks also provides a bunch of well-designed high-level hooks to interact with relays, so you don't need to worry about the low-level details any more.
+
+</details>
 
 ## Usage
 
