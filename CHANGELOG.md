@@ -5,6 +5,7 @@
 - Improved interacting with different signers.
 - Added `useSigner` hook.
 - Added `useLogin` hook.
+- Removed `useNip07` hook.
 
 ### Breaking Changes
 
