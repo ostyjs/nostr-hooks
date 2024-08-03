@@ -9,6 +9,7 @@
 ### Breaking Changes
 
 - Extracted signer related functionalities from `useNDK` hook to `useSigner` hook. Now you need to import `setSigner` method from `useSigner` hook instead of `useNDK` hook.
+- Removed `useNip07` hook. Now you can use `useLogin` hook to login with extension (NIP-07).
 
 ## 2.6.0
 
