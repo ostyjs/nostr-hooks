@@ -1,5 +1,15 @@
 # Nostr-Hooks
 
+## 2.7.0
+
+- Improved interacting with different signers.
+- Added `useSigner` hook.
+- Added `useLogin` hook.
+
+### Breaking Changes
+
+- Extracted signer related functionalities from `useNDK` hook to `useSigner` hook. Now you need to import `setSigner` method from `useSigner` hook instead of `useNDK` hook.
+
 ## 2.6.0
 
 - Added `fetchProfiles` boolean to `useSubscribe` hook to fetch profiles on subscription.
