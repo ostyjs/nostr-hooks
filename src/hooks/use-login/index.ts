@@ -231,10 +231,19 @@ export const useLogin = () => {
     [localLoginMethod, loginWithExtention, loginWithRemoteSigner, loginWithSecretKey]
   );
 
+  const logout = useCallback(() => {
+    setLocalLoginMethod(undefined);
+    setLocalNip46Address(undefined);
+    setLocalSecretKey(undefined);
+
+    setSigner(undefined);
+  }, [setLocalLoginMethod, setLocalNip46Address, setLocalSecretKey, setSigner]);
+
   return {
     loginWithExtention,
     loginWithRemoteSigner,
     loginWithSecretKey,
     reLoginFromLocalStorage,
+    logout,
   };
 };
