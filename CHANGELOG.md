@@ -1,5 +1,14 @@
 # Nostr-Hooks
 
+## 2.8.0
+
+- Improved `useSubscribe` hook to react to the changes in the input parameters.
+
+### Breaking Changes
+
+- `useSubscribe` hook is now sensitive to all the input parameters. If any of the input parameters change, the hook will unsubscribe from the previous subscription and subscribe to the new one. This will help you to subscribe to different filters based on the input parameters. You need to make sure that the input parameters are memoized and don't change on every render to avoid infinite re-render loops. You can find examples in README.
+- `useNostrHooks` hook is now sensitive to the initial NDK instance parameter. You need to make sure that the initial NDK instance is memoized and doesn't change on every render to avoid infinite re-render loops. You can find examples in README.
+
 ## 2.7.0
 
 - Improved interacting with different signers.
