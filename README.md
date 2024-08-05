@@ -77,7 +77,7 @@ const App = () => {
 };
 ```
 
-> Make sure to create you custom NDK instance outside of the component body to prevent re-creating it on every render. You can also use the `useMemo` hook to memoize the custom NDK instance if you want to re-create it when some dependencies change.
+> ⚠️ Remember to use memoization techniques like `useMemo` to prevent re-creating the custom NDK instance on every render and avoid infinite re-render loops.
 
 ### Subscribe to events
 
@@ -88,10 +88,10 @@ Here are some examples of how to use the `useSubscribe` hook:
 ```jsx
 import { useSubscribe } from 'nostr-hooks';
 
+const filters = [{ authors: ['pubkey1'], kinds: [1] }];
+
 const MyComponent = () => {
-  const { events } = useSubscribe({
-    filters: [{ authors: ['pubkey1'], kinds: [1] }],
-  });
+  const { events } = useSubscribe({ filters });
 
   if (!events) return <p>Loading...</p>;
 
@@ -108,7 +108,7 @@ const MyComponent = () => {
 };
 ```
 
-The `useSubscribe` hook takes an object with one mandatory and two optional parameters:
+The `useSubscribe` hook takes an object with one mandatory and some optional parameters:
 
 - `filters`: A mandatory array of filters that the subscription should be created for.
 - `enabled`: An optional boolean flag indicating whether the subscription is enabled. If set to `false`, the subscription will not be created automatically.
@@ -125,19 +125,43 @@ The `useSubscribe` hook returns an object with four properties:
 - `unSubscribe`: A function that can be used to unsubscribe from the subscription.
 - `isSubscribed`: A boolean flag indicating whether the subscription is active.
 
+⚠️ **Note** that since version 2.8.0, the `useSubscribe` hook is sensitive to all the input parameters. If any of the input parameters change, the hook will unsubscribe from the previous subscription and subscribe to the new one. This will help you to subscribe to different filters based on the input parameters. You need to make sure that the input parameters are memoized and don't change on every render to avoid **infinite re-render loops**.
+
+🚫 Don't:
+
+```jsx
+const MyComponent = ({ pubkey }) => {
+  const { events } = useSubscribe({ filters: [{ authors: [pubkey], kinds: [1] }] });
+
+  // ...
+};
+```
+
+✅ Do:
+
+```jsx
+const MyComponent = ({ pubkey }) => {
+  const filters = useMemo(() => [{ authors: [pubkey], kinds: [1] }], [pubkey]);
+
+  const { events } = useSubscribe({ filters });
+
+  // ...
+};
+```
+
 #### Example 2: Using multiple subscriptions in a single component:
 
 ```jsx
 import { useSubscribe } from 'nostr-hooks';
 
-const MyComponent = () => {
-  const { events: articles } = useSubscribe({
-    filters: [{ authors: ['pubkey'], kinds: [30023] }],
-  });
+// You can define filters outside the component to prevent re-creating them on every render
+const articlesFilters = [{ authors: ['pubkey'], kinds: [30023] }];
+const notesFilters = [{ authors: ['pubkey'], kinds: [1] }];
 
-  const { events: notes } = useSubscribe({
-    filters: [{ authors: ['pubkey'], kinds: [1] }],
-  });
+const MyComponent = () => {
+  const { events: articles } = useSubscribe({ filters: articlesFilters });
+
+  const { events: notes } = useSubscribe({ filters: notesFilters });
 
   return (
     <>
@@ -180,9 +204,8 @@ const App = () => {
 };
 
 const ComponentA = () => {
-  const { events } = useSubscribe({
-    filters: [{ authors: ['pubkey'], kinds: [1] }],
-  });
+  const filters = useMemo(() => [{ authors: ['pubkey'], kinds: [1] }], []);
+  const { events } = useSubscribe({ filters });
 
   return (
     <ul>
@@ -197,9 +220,8 @@ const ComponentA = () => {
 };
 
 const ComponentB = () => {
-  const { events } = useSubscribe({
-    filters: [{ authors: ['pubkey'], kinds: [30023] }],
-  });
+  const filters = useMemo(() => [{ authors: ['pubkey'], kinds: [30023] }], []);
+  const { events } = useSubscribe({ filters });
 
   return (
     <ul>
@@ -222,10 +244,10 @@ The `useSubscribe` hook can be used in multiple components. Nostr-Hooks batches 
 import { useSubscribe } from 'nostr-hooks';
 
 const MyComponent = ({ noteId }: Params) => {
-  const { events } = useSubscribe({
+  const { events } = useSubscribe(useMemo(() => ({
     filters: [{ ids: [noteId] }],
     enabled: !!noteId,
-  });
+  }), [noteId]));
 
   return (
     <>
@@ -316,6 +338,10 @@ You can leverage `useNdk` hook to interact with the NDK instance. it returns the
 ```jsx
 import { useNdk } from 'nostr-hooks';
 
+const newNdk = new NDK({
+  /* ... */
+});
+
 const MyComponent = () => {
   const { ndk, setNdk } = useNdk();
 
@@ -325,11 +351,7 @@ const MyComponent = () => {
 
   // You can also update the NDK instance using the setNdk function
   // Example:
-  setNdk(
-    new NDK({
-      /* ... */
-    })
-  ); // this will replace the existing NDK instance with the new one
+  setNdk(newNdk); // this will replace the existing NDK instance with the new one
 };
 ```
 
@@ -340,6 +362,8 @@ You can leverage `useSigner` hook to interact with the signer. it returns the si
 ```jsx
 import { useSigner } from 'nostr-hooks';
 
+const newSigner = new NDKNip07Signer();
+
 const MyComponent = () => {
   const { signer, setSigner } = useSigner();
 
@@ -349,7 +373,7 @@ const MyComponent = () => {
 
   // You can also update the signer using the setSigner function
   // Example:
-  setSigner(new NDKNip07Signer()); // this will keep the existing NDK instance and update its signer
+  setSigner(newSigner); // this will keep the existing NDK instance and update its signer
 };
 ```
 
