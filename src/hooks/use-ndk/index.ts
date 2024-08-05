@@ -1,4 +1,4 @@
-import { useStore } from 'src/store';
+import { useStore } from '../../store';
 
 export const useNdk = () => {
   const ndk = useStore((state) => state.ndk);
