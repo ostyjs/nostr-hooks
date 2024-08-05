@@ -1,16 +1,91 @@
-import {
+import NDK, {
   NDKEvent,
   NDKFilter,
   NDKRelaySet,
   NDKSubscription,
   NDKSubscriptionOptions,
 } from '@nostr-dev-kit/ndk';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo } from 'react';
+import { create } from 'zustand';
 
 import { useNdk } from '../use-ndk';
 
+type State = {
+  subscription: NDKSubscription | undefined;
+  eose: boolean;
+  events: NDKEvent[];
+};
+
+type Actions = {
+  subscribe: (params: UseSubscribeParams & { ndk: NDK }) => void;
+  resetState: () => void;
+  unSubscribe: () => void;
+};
+
+const initialState = {
+  subscription: undefined,
+  eose: false,
+  events: [],
+};
+
+const useLocalStore = create<State & Actions>()((set, get) => ({
+  ...initialState,
+
+  resetState: () => set(initialState),
+
+  unSubscribe: () => {
+    const { subscription } = get();
+
+    subscription?.stop();
+
+    set({ subscription: undefined });
+  },
+
+  subscribe: ({ filters, opts, relays, fetchProfiles, ndk }) => {
+    const { subscription } = get();
+
+    if (subscription) return;
+
+    const relaySet =
+      relays && relays.length > 0 ? NDKRelaySet.fromRelayUrls(relays, ndk) : undefined;
+
+    const newSubscription = ndk.subscribe(filters, opts, relaySet);
+
+    newSubscription.on('event', (event: NDKEvent) => {
+      if (fetchProfiles && event.author.profile === undefined) {
+        event.author.fetchProfile().then(() => {
+          set((state) => ({ events: [...state.events, event] }));
+        });
+      } else {
+        set((state) => ({ events: [...state.events, event] }));
+      }
+    });
+
+    newSubscription.on('eose', () => {
+      set({ eose: true });
+
+      if (opts?.closeOnEose) {
+        newSubscription.stop();
+        set({ subscription: undefined });
+      }
+    });
+
+    set({ subscription: newSubscription });
+  },
+}));
+
+const { subscribe, resetState, unSubscribe } = useLocalStore.getState();
+
+type UseSubscribeParams = {
+  filters: NDKFilter[];
+  opts?: NDKSubscriptionOptions | undefined;
+  enabled?: boolean | undefined;
+  relays?: string[] | undefined;
+  fetchProfiles?: boolean | undefined;
+};
+
 /**
- * Hook for subscribing to events.
+ * Hook for subscribing to events. Remember to use memoized params to avoid infinite re-render loops.
  *
  * @param filters - An array of NDKFilter objects.
  * @param opts - Optional NDKSubscriptionOptions for configuring the subscription.
@@ -21,73 +96,36 @@ import { useNdk } from '../use-ndk';
  */
 export const useSubscribe = ({
   filters,
-  opts,
+  opts = undefined,
   enabled = true,
   relays = undefined,
   fetchProfiles = false,
-}: {
-  filters: NDKFilter[];
-  opts?: NDKSubscriptionOptions;
-  enabled?: boolean;
-  relays?: string[] | undefined;
-  fetchProfiles?: boolean;
-}) => {
-  const subscription = useRef<NDKSubscription | undefined>(undefined);
-
-  const [eose, setEose] = useState(false);
-  const [events, setEvents] = useState<NDKEvent[]>([]);
-
+}: UseSubscribeParams) => {
   const { ndk } = useNdk();
+
+  const subscription = useLocalStore((state) => state.subscription);
+  const eose = useLocalStore((state) => state.eose);
+  const events = useLocalStore((state) => state.events);
+
+  useEffect(() => {
+    unSubscribe();
+    resetState();
+
+    // start a new subscription with new params
+    if (enabled && filters.length > 0 && !!ndk) {
+      subscribe({ filters, opts, relays, fetchProfiles, ndk });
+    }
+
+    return () => {
+      unSubscribe();
+      resetState();
+    };
+  }, [enabled, fetchProfiles, filters, opts, relays, ndk]);
 
   const sortedEvents: NDKEvent[] = useMemo(
     () => (events ? events.sort((a, b) => b.created_at! - a.created_at!) : []),
     [events]
   );
 
-  const canSubscribe =
-    !!ndk && filters.length > 0 && enabled == true && subscription.current === undefined;
-
-  const unSubscribe = () => {
-    subscription.current?.stop();
-    subscription.current = undefined;
-  };
-
-  const subscribe = () => {
-    if (!ndk) return;
-
-    setEose(false);
-
-    const relaySet =
-      relays && relays.length > 0 ? NDKRelaySet.fromRelayUrls(relays, ndk) : undefined;
-
-    subscription.current = ndk.subscribe(filters, opts, relaySet);
-    subscription.current.start();
-    subscription.current.on('event', (event: NDKEvent) => {
-      if (fetchProfiles && event.author.profile === undefined) {
-        event.author.fetchProfile().then(() => {
-          setEvents((prevEvents) => [...(prevEvents || []), event]);
-        });
-      } else {
-        setEvents((prevEvents) => [...(prevEvents || []), event]);
-      }
-    });
-    subscription.current.on('eose', () => {
-      setEose(true);
-
-      opts?.closeOnEose && unSubscribe();
-    });
-  };
-
-  useEffect(() => {
-    canSubscribe && subscribe();
-  }, [canSubscribe, subscribe]);
-
-  useEffect(() => {
-    return () => {
-      subscription.current?.stop();
-      subscription.current = undefined;
-    };
-  }, []);
-
-  return { events: sortedEvents, isSubscribed: !!subscription.current, eose, unSubscribe };
+  return { events: sortedEvents, eose, isSubscribed: !!subscription, unSubscribe };
 };
