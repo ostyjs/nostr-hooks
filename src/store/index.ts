@@ -2,22 +2,19 @@ import NDK, { NDKSigner } from '@nostr-dev-kit/ndk';
 import cloneDeep from 'lodash/cloneDeep';
 import { create } from 'zustand';
 
-type State = {
+type NDKState = {
   ndk: NDK;
 };
 
-type Actions = {
+type NDKActions = {
   setNdk: (ndk: NDK) => void;
+};
+
+type SignerActions = {
   setSigner: (signer: NDKSigner | undefined) => void;
 };
 
-/**
- * Custom hook for managing NDK (Nostr Development Kit) instance.
- */
-export const useStore = create<State & Actions>((set) => ({
-  /**
-   * The NDK instance.
-   */
+export const useStore = create<NDKState & NDKActions & SignerActions>()((set, get) => ({
   ndk: new NDK({
     explicitRelayUrls: [
       'wss://nos.lol',
@@ -35,16 +32,8 @@ export const useStore = create<State & Actions>((set) => ({
     ],
   }),
 
-  /**
-   * Sets the NDK instance.
-   * @param ndk - The new NDK instance.
-   */
-  setNdk: (ndk) => ({ ndk }),
+  setNdk: (ndk) => set({ ndk }),
 
-  /**
-   * Sets the signer for the current NDK instance.
-   * @param signer - The new signer.
-   */
   setSigner: (signer) =>
     set((state) => {
       if (!state.ndk) return state;
