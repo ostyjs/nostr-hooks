@@ -61,7 +61,23 @@ const App = () => {
 };
 ```
 
-> You can also pass a custom NDK instance to the `useNostrHooks` hook. This is useful when you want to initiate your app with a custom NDK instance with your own configuration. You can also use other provided hooks like `useNdk` to interact with the NDK instance later.
+You can also pass a custom NDK instance to the `useNostrHooks` hook. This is useful when you want to initiate your app with a custom NDK instance with your own configuration.
+
+```jsx
+import { useNostrHooks } from 'nostr-hooks';
+
+const customNDK = new NDK({
+  /* ... */
+});
+
+const App = () => {
+  useNostrHooks(customNDK);
+
+  return <YourApp />;
+};
+```
+
+> Make sure to create you custom NDK instance outside of the component body to prevent re-creating it on every render. You can also use the `useMemo` hook to memoize the custom NDK instance if you want to re-create it when some dependencies change.
 
 ### Subscribe to events
 
