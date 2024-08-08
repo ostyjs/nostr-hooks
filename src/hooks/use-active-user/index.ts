@@ -15,19 +15,21 @@ export const useActiveUser = (options?: { fetchProfile?: boolean | undefined }) 
   const { signer } = useSigner();
 
   useEffect(() => {
-    if (!signer) return;
+    if (signer) {
+      signer.user().then((user) => {
+        if (!user) return;
 
-    signer.user().then((user) => {
-      if (!user) return;
-
-      if (options?.fetchProfile) {
-        user.fetchProfile().finally(() => {
+        if (options?.fetchProfile) {
+          user.fetchProfile().finally(() => {
+            setActiveUser(user);
+          });
+        } else {
           setActiveUser(user);
-        });
-      } else {
-        setActiveUser(user);
-      }
-    });
+        }
+      });
+    } else {
+      setActiveUser(undefined);
+    }
   }, [signer, options?.fetchProfile]);
 
   return { activeUser };
