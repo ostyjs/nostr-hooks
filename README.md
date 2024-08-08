@@ -429,7 +429,7 @@ const MyComponent = () => {
 
   return (
     <div>
-      <p>{activeUser.profile?.name}</p>
+      <p>{activeUser.pubkey}</p>
     </div>
   );
 };
