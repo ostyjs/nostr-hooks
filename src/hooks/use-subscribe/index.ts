@@ -1,11 +1,11 @@
-import NDK, {
+import {
   NDKEvent,
   NDKFilter,
   NDKRelaySet,
   NDKSubscription,
   NDKSubscriptionOptions,
 } from '@nostr-dev-kit/ndk';
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { create } from 'zustand';
 
 import { useNdk } from '../use-ndk';
@@ -14,18 +14,6 @@ type State = {
   subscription: NDKSubscription | undefined;
   eose: boolean;
   events: NDKEvent[];
-};
-
-type Actions = {
-  subscribe: (params: UseSubscribeParams & { ndk: NDK }) => void;
-  resetState: () => void;
-  unSubscribe: () => void;
-};
-
-const initialState = {
-  subscription: undefined,
-  eose: false,
-  events: [],
 };
 
 type UseSubscribeParams = {
@@ -53,83 +41,93 @@ export const useSubscribe = ({
   relays = undefined,
   fetchProfiles = false,
 }: UseSubscribeParams) => {
+  // Initial state
+  const initialState = useRef({
+    subscription: undefined,
+    eose: false,
+    events: [],
+  });
+
+  // Create a store ref for each instance of the hook
   const useStoreRef = useRef(
-    create<State & Actions>()((set, get) => ({
-      ...initialState,
-
-      resetState: () => set(initialState),
-
-      unSubscribe: () => {
-        const { subscription } = get();
-
-        subscription?.stop();
-
-        set({ subscription: undefined });
-      },
-
-      subscribe: ({ filters, opts, relays, fetchProfiles, ndk }) => {
-        const { subscription } = get();
-
-        if (subscription) return;
-
-        const relaySet =
-          relays && relays.length > 0 ? NDKRelaySet.fromRelayUrls(relays, ndk) : undefined;
-
-        const newSubscription = ndk.subscribe(filters, opts, relaySet);
-
-        newSubscription.on('event', (event: NDKEvent) => {
-          if (fetchProfiles && event.author.profile === undefined) {
-            event.author.fetchProfile().then(() => {
-              set((state) => ({ events: [...state.events, event] }));
-            });
-          } else {
-            set((state) => ({ events: [...state.events, event] }));
-          }
-        });
-
-        newSubscription.on('eose', () => {
-          set({ eose: true });
-
-          if (opts?.closeOnEose) {
-            newSubscription.stop();
-            set({ subscription: undefined });
-          }
-        });
-
-        set({ subscription: newSubscription });
-      },
+    create<State>()(() => ({
+      ...initialState.current,
     }))
   );
 
+  // Get the store instance from the ref
   const useStore = useStoreRef.current;
 
+  // Get reactive NDK instance from the global store
   const { ndk } = useNdk();
 
+  // Get reactive states from the store
   const subscription = useStore((state) => state.subscription);
   const eose = useStore((state) => state.eose);
   const events = useStore((state) => state.events);
-  const subscribe = useStore((state) => state.subscribe);
-  const resetState = useStore((state) => state.resetState);
-  const unSubscribe = useStore((state) => state.unSubscribe);
 
-  useEffect(() => {
-    unSubscribe();
-    resetState();
-
-    if (enabled && filters.length > 0 && !!ndk) {
-      subscribe({ filters, opts, relays, fetchProfiles, ndk });
-    }
-
-    return () => {
-      unSubscribe();
-      resetState();
-    };
-  }, [enabled, fetchProfiles, filters, opts, relays, ndk]);
-
+  // Sort the events by created_at timestamp
   const sortedEvents: NDKEvent[] = useMemo(
     () => (events ? events.sort((a, b) => b.created_at! - a.created_at!) : []),
     [events]
   );
+
+  // Unsubscribe function for external use
+  const unSubscribe = useCallback(() => {
+    useStoreRef.current.getState().subscription?.stop();
+    useStoreRef.current.setState({ subscription: undefined });
+  }, []);
+
+  useEffect(() => {
+    // Stop the subscription if it is already running
+    useStoreRef.current.getState().subscription?.stop();
+
+    // Reset the state
+    useStoreRef.current.setState({ ...initialState.current, subscription: undefined });
+
+    // Start a new subscription if enabled and filters are provided
+    if (enabled && filters.length > 0 && !!ndk) {
+      const sub = useStoreRef.current.getState().subscription;
+      if (sub) return;
+
+      const relaySet =
+        relays && relays.length > 0 ? NDKRelaySet.fromRelayUrls(relays, ndk) : undefined;
+
+      const newSubscription = ndk.subscribe(filters, opts, relaySet);
+
+      // Listen for events and update the state
+      newSubscription.on('event', (event: NDKEvent) => {
+        if (fetchProfiles && event.author.profile === undefined) {
+          event.author.fetchProfile().then(() => {
+            useStoreRef.current.setState((state) => ({ events: [...state.events, event] }));
+          });
+        } else {
+          useStoreRef.current.setState((state) => ({ events: [...state.events, event] }));
+        }
+      });
+
+      // Listen for EOSE and update the state
+      newSubscription.on('eose', () => {
+        useStoreRef.current.setState({ eose: true });
+
+        if (opts?.closeOnEose) {
+          newSubscription.stop();
+          useStoreRef.current.setState({ subscription: undefined });
+        }
+      });
+
+      // Update the state with the new subscription
+      useStoreRef.current.setState({ subscription: newSubscription });
+    }
+
+    return () => {
+      // Stop the subscription when the component unmounts
+      useStoreRef.current.getState().subscription?.stop();
+
+      // Reset the state
+      useStoreRef.current.setState({ ...initialState.current, subscription: undefined });
+    };
+  }, [enabled, fetchProfiles, filters, opts, relays, ndk]);
 
   return { events: sortedEvents, eose, isSubscribed: !!subscription, unSubscribe };
 };
