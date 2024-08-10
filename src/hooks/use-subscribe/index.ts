@@ -55,16 +55,13 @@ export const useSubscribe = ({
     }))
   );
 
-  // Get the store instance from the ref
-  const useStore = useStoreRef.current;
-
   // Get reactive NDK instance from the global store
   const { ndk } = useNdk();
 
   // Get reactive states from the store
-  const subscription = useStore((state) => state.subscription);
-  const eose = useStore((state) => state.eose);
-  const events = useStore((state) => state.events);
+  const subscription = useStoreRef.current((state) => state.subscription);
+  const eose = useStoreRef.current((state) => state.eose);
+  const events = useStoreRef.current((state) => state.events);
 
   // Sort the events by created_at timestamp
   const sortedEvents: NDKEvent[] = useMemo(
@@ -87,8 +84,7 @@ export const useSubscribe = ({
 
     // Start a new subscription if enabled and filters are provided
     if (enabled && filters.length > 0 && !!ndk) {
-      const sub = useStoreRef.current.getState().subscription;
-      if (sub) return;
+      if (useStoreRef.current.getState().subscription) return;
 
       const relaySet =
         relays && relays.length > 0 ? NDKRelaySet.fromRelayUrls(relays, ndk) : undefined;
