@@ -14,7 +14,7 @@ type SignerActions = {
   setSigner: (signer: NDKSigner | undefined) => void;
 };
 
-export const useStore = create<NDKState & NDKActions & SignerActions>()((set, get) => ({
+export const useStore = create<NDKState & NDKActions & SignerActions>()((set) => ({
   ndk: new NDK({
     explicitRelayUrls: [
       'wss://nos.lol',
