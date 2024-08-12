@@ -388,7 +388,7 @@ You can use the `useLogin` hook to login with different signers. This hook will 
 > - `loginWithExtention`: Login with Nostr Extention (NIP07).
 > - `loginWithRemoteSigner`: Login with Remote Signer (NIP46).
 > - `loginWithSecretKey`: Login with Secret Key.
-> - `reLoginFromLocalStorage`: Re-Login from Local Storage.
+> - `loginFromLocalStorage`: Login from previously saved login method in local storage.
 > - `logout`: Logout.
 
 ```jsx
@@ -399,7 +399,7 @@ const MyComponent = () => {
     loginWithExtention,
     loginWithRemoteSigner,
     loginWithSecretKey,
-    reLoginFromLocalStorage,
+    loginFromLocalStorage,
     logout,
   } = useLogin();
 
@@ -408,7 +408,7 @@ const MyComponent = () => {
       <button onClick={() => loginWithExtention()}>Login with Extention</button>
       <button onClick={() => loginWithRemoteSigner()}>Login with Remote Signer</button>
       <button onClick={() => loginWithSecretKey()}>Login with Secret Key</button>
-      <button onClick={() => reLoginFromLocalStorage()}>Re-Login from Local Storage</button>
+      <button onClick={() => loginFromLocalStorage()}>Login from Local Storage</button>
       <button onClick={() => logout()}>Logout</button>
     </>
   );

@@ -38,7 +38,7 @@ export const useLogin = () => {
   );
 
   const { ndk } = useNdk();
-  const { setSigner } = useSigner();
+  const { signer, setSigner } = useSigner();
 
   const loginWithExtention = useCallback(
     ({
@@ -184,7 +184,7 @@ export const useLogin = () => {
     ]
   );
 
-  const reLoginFromLocalStorage = useCallback(
+  const loginFromLocalStorage = useCallback(
     ({
       onError,
       onSuccess,
@@ -192,6 +192,8 @@ export const useLogin = () => {
       onError?: (err: unknown) => void;
       onSuccess?: (signer: NDKNip46Signer | NDKNip07Signer | NDKPrivateKeySigner) => void;
     }) => {
+      if (signer) return;
+
       switch (localLoginMethod) {
         case LoginMethod.Extension:
           loginWithExtention({
@@ -228,7 +230,7 @@ export const useLogin = () => {
           break;
       }
     },
-    [localLoginMethod, loginWithExtention, loginWithRemoteSigner, loginWithSecretKey]
+    [signer, localLoginMethod, loginWithExtention, loginWithRemoteSigner, loginWithSecretKey]
   );
 
   const logout = useCallback(() => {
@@ -243,7 +245,7 @@ export const useLogin = () => {
     loginWithExtention,
     loginWithRemoteSigner,
     loginWithSecretKey,
-    reLoginFromLocalStorage,
+    loginFromLocalStorage,
     logout,
   };
 };
