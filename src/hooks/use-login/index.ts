@@ -25,7 +25,7 @@ enum LoginMethod {
  */
 export const useLogin = () => {
   const [localLoginMethod, setLocalLoginMethod] = useLocalStorage<LoginMethod | undefined>(
-    LoginMethod.Extension,
+    'login-method',
     undefined
   );
   const [localNip46Address, setLocalNip46Address] = useLocalStorage<string | undefined>(
