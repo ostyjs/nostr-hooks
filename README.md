@@ -415,6 +415,16 @@ const MyComponent = () => {
 };
 ```
 
+You can also use `useAutoLogin` hook to automatically login with previously saved login method in local storage when the component mounts.
+
+```jsx
+import { useAutoLogin } from 'nostr-hooks';
+
+const MyComponent = () => {
+  useAutoLogin();
+};
+```
+
 ### Getting the Active User Profile
 
 You can use the `useActiveUser` hook to get the active user's profile based on the current NDK instance and its signer.
