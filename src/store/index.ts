@@ -1,5 +1,4 @@
-import NDK, { NDKSigner } from '@nostr-dev-kit/ndk';
-import cloneDeep from 'lodash/cloneDeep';
+import NDK from '@nostr-dev-kit/ndk';
 import { create } from 'zustand';
 
 type NDKState = {
@@ -10,37 +9,10 @@ type NDKActions = {
   setNdk: (ndk: NDK) => void;
 };
 
-type SignerActions = {
-  setSigner: (signer: NDKSigner | undefined) => void;
-};
-
-export const useStore = create<NDKState & NDKActions & SignerActions>()((set) => ({
+export const useStore = create<NDKState & NDKActions>()((set) => ({
   ndk: new NDK({
-    explicitRelayUrls: [
-      'wss://nos.lol',
-      'wss://relay.nostr.band',
-      'wss://relay.damus.io',
-      'wss://relay.snort.social',
-      'wss://relayable.org',
-      'wss://offchain.pub',
-      'wss://purplepag.es',
-      'wss://relay.primal.net',
-      'wss://atlas.nostr.land',
-      'wss://eden.nostr.land',
-      'wss://relay.noswhere.com',
-      'wss://relay.nostr.bg',
-    ],
+    explicitRelayUrls: ['wss://nos.lol'],
   }),
 
   setNdk: (ndk) => set({ ndk }),
-
-  setSigner: (signer) =>
-    set((state) => {
-      if (!state.ndk) return state;
-
-      const ndk = cloneDeep(state.ndk);
-      ndk.signer = signer;
-
-      return { ...state, ndk };
-    }),
 }));
