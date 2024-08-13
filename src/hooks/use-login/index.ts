@@ -41,13 +41,7 @@ export const useLogin = () => {
   const { signer, setSigner } = useSigner();
 
   const loginWithExtention = useCallback(
-    ({
-      onError,
-      onSuccess,
-    }: {
-      onSuccess?: (signer: NDKNip07Signer) => void;
-      onError?: (err: any) => void;
-    }) => {
+    (options?: { onSuccess?: (signer: NDKNip07Signer) => void; onError?: (err: any) => void }) => {
       const signer = new NDKNip07Signer();
 
       signer
@@ -60,32 +54,26 @@ export const useLogin = () => {
 
           setSigner(signer);
 
-          onSuccess?.(signer);
+          options?.onSuccess?.(signer);
         })
         .catch((err) => {
           setLocalLoginMethod(undefined);
           setLocalNip46Address(undefined);
           setLocalSecretKey(undefined);
 
-          onError?.(err);
+          options?.onError?.(err);
         });
     },
     [setLocalLoginMethod, setLocalNip46Address, setLocalSecretKey, setSigner]
   );
 
   const loginWithRemoteSigner = useCallback(
-    ({
-      nip46Address,
-      onError,
-      onSuccess,
-    }: {
+    (options?: {
       nip46Address?: string;
       onSuccess?: (signer: NDKNip46Signer) => void;
       onError?: (err: unknown) => void;
     }) => {
-      if (!nip46Address) {
-        nip46Address = localNip46Address;
-      }
+      const nip46Address = options?.nip46Address || localNip46Address;
 
       if (nip46Address && nip46Address !== '') {
         const signer = new NDKNip46Signer(ndk, nip46Address);
@@ -103,21 +91,21 @@ export const useLogin = () => {
 
             setSigner(signer);
 
-            onSuccess?.(signer);
+            options?.onSuccess?.(signer);
           })
           .catch((err) => {
             setLocalLoginMethod(undefined);
             setLocalNip46Address(undefined);
             setLocalSecretKey(undefined);
 
-            onError?.(err);
+            options?.onError?.(err);
           });
       } else {
         setLocalLoginMethod(undefined);
         setLocalNip46Address(undefined);
         setLocalSecretKey(undefined);
 
-        onError?.('NIP46 address is empty');
+        options?.onError?.('NIP46 address is empty');
       }
     },
     [
@@ -131,18 +119,12 @@ export const useLogin = () => {
   );
 
   const loginWithSecretKey = useCallback(
-    ({
-      secretKey,
-      onError,
-      onSuccess,
-    }: {
+    (options?: {
       secretKey?: string;
       onError?: (err: unknown) => void;
       onSuccess?: (signer: NDKPrivateKeySigner) => void;
     }) => {
-      if (!secretKey) {
-        secretKey = localSecretKey;
-      }
+      const secretKey = options?.secretKey || localSecretKey;
 
       if (secretKey && secretKey !== '') {
         try {
@@ -157,21 +139,21 @@ export const useLogin = () => {
 
             setSigner(signer);
 
-            onSuccess?.(signer);
+            options?.onSuccess?.(signer);
           });
         } catch (err) {
           setLocalLoginMethod(undefined);
           setLocalNip46Address(undefined);
           setLocalSecretKey(undefined);
 
-          onError?.(err);
+          options?.onError?.(err);
         }
       } else {
         setLocalLoginMethod(undefined);
         setLocalNip46Address(undefined);
         setLocalSecretKey(undefined);
 
-        onError?.('Secret key is empty');
+        options?.onError?.('Secret key is empty');
       }
     },
     [
@@ -185,10 +167,7 @@ export const useLogin = () => {
   );
 
   const loginFromLocalStorage = useCallback(
-    ({
-      onError,
-      onSuccess,
-    }: {
+    (options?: {
       onError?: (err: unknown) => void;
       onSuccess?: (signer: NDKNip46Signer | NDKNip07Signer | NDKPrivateKeySigner) => void;
     }) => {
@@ -198,35 +177,35 @@ export const useLogin = () => {
         case LoginMethod.Extension:
           loginWithExtention({
             onSuccess: (signer) => {
-              onSuccess?.(signer);
+              options?.onSuccess?.(signer);
             },
             onError: (err) => {
-              onError?.(err);
+              options?.onError?.(err);
             },
           });
           break;
         case LoginMethod.Remote:
           loginWithRemoteSigner({
             onSuccess: (signer) => {
-              onSuccess?.(signer);
+              options?.onSuccess?.(signer);
             },
             onError: (err) => {
-              onError?.(err);
+              options?.onError?.(err);
             },
           });
           break;
         case LoginMethod.SecretKey:
           loginWithSecretKey({
             onSuccess: (signer) => {
-              onSuccess?.(signer);
+              options?.onSuccess?.(signer);
             },
             onError: (err) => {
-              onError?.(err);
+              options?.onError?.(err);
             },
           });
           break;
         default:
-          onError?.('Login method is not set in local storage');
+          options?.onError?.('Login method is not set in local storage');
           break;
       }
     },
