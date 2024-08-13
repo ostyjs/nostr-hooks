@@ -1,6 +1,6 @@
 {
   "name": "nostr-hooks",
-  "version": "2.8.9",
+  "version": "2.9.0",
   "description": "React hooks for developing Nostr clients",
   "main": "dist/index.js",
   "module": "dist/index.js",
