@@ -315,6 +315,8 @@ const MyComponent = () => {
 };
 ```
 
+> You can also pass an optional `ndk` parameter to the `useProfile` hook to fetch the profile using a custom NDK instance.
+
 ### Interact with NDK instance
 
 You can leverage `useNdk` hook to interact with the NDK instance. it returns the NDK instance itself, and a setter function for updating the NDK instance.
