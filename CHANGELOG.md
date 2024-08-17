@@ -1,5 +1,18 @@
 # Nostr-Hooks
 
+## 2.9.2
+
+- Replaces `useProfiles` with `useProfile` hook.
+- Added `useAutoLogin` hook.
+- Bug fixes for `useLogin` hook.
+- Bug fixes for setting ndk signer.
+- Refactor store.
+
+### Breaking Changes
+
+- Replaces `useProfiles` with `useProfile` hook. Now you can use `useProfile` hook to fetch a single profile by address.
+- Replaces `reLoginFromLocalStorage` with `loginFromLocalStorage`.
+
 ## 2.8.0
 
 - Improved `useSubscribe` hook to react to the changes in the input parameters.
