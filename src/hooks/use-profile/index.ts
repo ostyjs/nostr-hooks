@@ -11,13 +11,14 @@ type ProfileParams = {
   relayUrls?: string[];
 };
 
-export const useProfile = (profileParams: ProfileParams, ndk?: NDK) => {
+export const useProfile = (profileParams?: ProfileParams, ndk?: NDK) => {
   const [profile, setProfile] = useState<NDKUserProfile | null>(null);
 
   const { ndk: _ndk } = useNdk();
 
   useEffect(() => {
     if (!profileParams) return;
+    if (profileParams.constructor === Object && Object.keys(profileParams).length === 0) return;
 
     if (!ndk) {
       ndk = _ndk;
