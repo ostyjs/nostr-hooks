@@ -4,6 +4,7 @@ export { useLogin } from './use-login';
 export { useNdk } from './use-ndk';
 export { useNewEvent } from './use-new-event';
 export { useNostrHooks } from './use-nostr-hooks';
+export { useProfile } from './use-profile';
 export { useProfiles } from './use-profiles';
 export { usePublish } from './use-publish';
 export { useSigner } from './use-signer';

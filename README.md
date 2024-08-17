@@ -270,8 +270,6 @@ The `useSubscribe` hook can be used in a component that depends on a prop or sta
 
 The `useNewEvent` hook is used to create a new NDK event, which can then be published using the internal `publish` method.
 
-#### Example:
-
 ```jsx
 import { useNewEvent } from 'nostr-hooks';
 
@@ -300,36 +298,22 @@ const MyComponent = () => {
 
 > There is also a `usePublish` hook that can be used to publish an existing NDK event.
 
-### Fetch Profiles
+### Fetch Profile for a user
 
-The `useProfiles` hook is used to fetch profiles for a given set of events or users.
-
-> The default behavior is to mutate the original events or users with the fetched profiles. To prevent this, you can use the `mutateOrignal` option and set it to `false`. In this case, the updated events or users will be returned from the `useProfiles` hook, and you can use them to render the UI.
-
-#### Example: Fetch profiles for a set of events:
-
-Consider a scenario where you have a list of events, and you want to fetch the profiles of the authors of those events.
+The `useProfile` hook is used to fetch profile for a given user based on their `pubkey`, `npub`, `nip46 address`, or `nip05`. It returns the fetched profile.
 
 ```jsx
 const MyComponent = () => {
-  const { events } = useSubscribe({ filters });
-
-  useProfiles({ events });
+  const { profile } = useProfile({ pubkey: '...' });
 
   return (
-    <ul>
-      {events.map((event) => (
-        <li key={event.id}>
-          <p>{event.author.profile?.name}</p>
-          <p>{event.author.profile?.bio}</p>
-        </li>
-      ))}
-    </ul>
+    <div>
+      <p>{profile?.displayName}</p>
+      <p>{profile?.about}</p>
+    </div>
   );
 };
 ```
-
-The `useProfiles` hook will automatically fetch the profiles of the authors of the events, and mutate the original events with the fetched profiles. This means that the `author` property of each event will be updated with the fetched profile.
 
 ### Interact with NDK instance
 
