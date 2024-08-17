@@ -8,6 +8,10 @@ type Props = {
   users?: NDKUser[];
 } & { mutateOriginal?: boolean };
 
+/**
+ * @deprecated This hook is deprecated and will be removed in future versions.
+ * Use `useProfile` instead.
+ */
 export const useProfiles = ({
   mutateOriginal = true,
   events: _events = [],
