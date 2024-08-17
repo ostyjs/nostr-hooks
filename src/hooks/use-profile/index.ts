@@ -1,4 +1,4 @@
-import { NDKUserProfile } from '@nostr-dev-kit/ndk';
+import NDK, { NDKUserProfile } from '@nostr-dev-kit/ndk';
 import { useEffect, useState } from 'react';
 
 import { useNdk } from '../use-ndk';
@@ -11,13 +11,19 @@ type ProfileParams = {
   relayUrls?: string[];
 };
 
-export const useProfile = (profileParams: ProfileParams) => {
+export const useProfile = (profileParams: ProfileParams, ndk?: NDK) => {
   const [profile, setProfile] = useState<NDKUserProfile | null>(null);
 
-  const { ndk } = useNdk();
+  const { ndk: _ndk } = useNdk();
 
   useEffect(() => {
     if (!profileParams) return;
+
+    if (!ndk) {
+      ndk = _ndk;
+    }
+
+    if (!ndk) return;
 
     ndk
       .getUser(profileParams)
@@ -25,7 +31,7 @@ export const useProfile = (profileParams: ProfileParams) => {
       .then((profile) => {
         setProfile(profile);
       });
-  }, [profileParams, ndk]);
+  }, [profileParams, _ndk, ndk]);
 
   return { profile };
 };
