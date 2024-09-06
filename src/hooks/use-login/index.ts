@@ -124,7 +124,7 @@ export const useLogin = () => {
       onError?: (err: unknown) => void;
       onSuccess?: (signer: NDKPrivateKeySigner) => void;
     }) => {
-      const secretKey = options?.secretKey || localSecretKey;
+      const secretKey = options && options.secretKey !== '' ? options.secretKey : localSecretKey;
 
       if (secretKey && secretKey !== '') {
         try {
