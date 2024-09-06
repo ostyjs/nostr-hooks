@@ -8,7 +8,7 @@ import { useSigner } from '../use-signer';
 enum LoginMethod {
   Extension = 'extension',
   Remote = 'remote',
-  SecretKey = 'secret-key',
+  SecretKey = 'secretkey',
 }
 
 /**
@@ -33,7 +33,7 @@ export const useLogin = () => {
     undefined
   );
   const [localSecretKey, setLocalSecretKey] = useLocalStorage<string | undefined>(
-    'secret-key',
+    'secretkey',
     undefined
   );
 
@@ -120,7 +120,7 @@ export const useLogin = () => {
 
   const loginWithSecretKey = useCallback(
     (options?: {
-      secretKey?: string;
+      secretKey?: string | undefined;
       onError?: (err: unknown) => void;
       onSuccess?: (signer: NDKPrivateKeySigner) => void;
     }) => {
