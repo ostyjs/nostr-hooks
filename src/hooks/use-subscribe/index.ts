@@ -1,4 +1,4 @@
-import {
+import NDK, {
   NDKEvent,
   NDKFilter,
   NDKRelaySet,
@@ -22,6 +22,7 @@ type UseSubscribeParams = {
   enabled?: boolean | undefined;
   relays?: string[] | undefined;
   fetchProfiles?: boolean | undefined;
+  customNdk?: NDK | undefined;
 };
 
 /**
@@ -32,6 +33,7 @@ type UseSubscribeParams = {
  * @param enabled - Optional boolean indicating whether the subscription is enabled. Default is true.
  * @param relays - Optional array of relay URLs to use for this subscription.
  * @param fetchProfiles - Optional boolean indicating whether to fetch profiles for the events. Default is false.
+ * @param customNdk - Optional NDK instance to use for the subscription instead of the global NDK instance.
  * @returns An object containing the sorted events, subscription status, end of stream flag, and an unSubscribe function.
  */
 export const useSubscribe = ({
@@ -40,6 +42,7 @@ export const useSubscribe = ({
   enabled = true,
   relays = undefined,
   fetchProfiles = false,
+  customNdk = undefined,
 }: UseSubscribeParams) => {
   // Initial state
   const initialState = useRef({
@@ -56,7 +59,10 @@ export const useSubscribe = ({
   );
 
   // Get reactive NDK instance from the global store
-  const { ndk } = useNdk();
+  const { ndk: globalNdk } = useNdk();
+
+  // Use the custom NDK instance if provided
+  const ndk = customNdk || globalNdk;
 
   // Get reactive states from the store
   const subscription = useStoreRef.current((state) => state.subscription);
