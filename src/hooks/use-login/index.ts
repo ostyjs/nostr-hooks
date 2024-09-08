@@ -1,4 +1,4 @@
-import { NDKNip07Signer, NDKNip46Signer, NDKPrivateKeySigner } from '@nostr-dev-kit/ndk';
+import NDK, { NDKNip07Signer, NDKNip46Signer, NDKPrivateKeySigner } from '@nostr-dev-kit/ndk';
 import { useLocalStorage } from '@uidotdev/usehooks';
 import { useCallback } from 'react';
 
@@ -11,19 +11,25 @@ enum LoginMethod {
   SecretKey = 'secret-key',
 }
 
+type Params = {
+  customNdk: NDK;
+  setCustomNdk: (customNdk: NDK) => void;
+};
+
 /**
  * Custom hook for handling login functionality.
  * This hook provides methods for logging in with different login methods,
  * such as extension (NIP07), remote signer (NIP46), and secret key.
  * It also provides a method for re-logging in from previously stored login method in local storage.
  *
+ * @param params - Optional parameters for custom NDK instance and its setter function.
  * @returns An object containing the following methods:
  * - `loginWithExtention`: A function for logging in with the extension method (NIP07).
  * - `loginWithRemoteSigner`: A function for logging in with the remote signer method (NIP46).
  * - `loginWithSecretKey`: A function for logging in with the secret key method.
  * - `reLoginFromLocalStorage`: A function for re-logging in from previously stored login method in local storage.
  */
-export const useLogin = () => {
+export const useLogin = (params?: Params) => {
   const [localLoginMethod, setLocalLoginMethod] = useLocalStorage<LoginMethod | undefined>(
     'login-method',
     undefined
@@ -38,7 +44,7 @@ export const useLogin = () => {
   );
 
   const { ndk } = useNdk();
-  const { signer, setSigner } = useSigner();
+  const { signer, setSigner } = useSigner(params);
 
   const loginWithExtention = useCallback(
     (options?: { onSuccess?: (signer: NDKNip07Signer) => void; onError?: (err: any) => void }) => {

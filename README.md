@@ -369,13 +369,13 @@ const MyComponent = () => {
 
 You can use the `useLogin` hook to login with different signers. This hook will automatically update the NDK instance with the new signer. It also uses local storage to persist the login method, so the user doesn't need to login manually every time the page reloads or the app restarts.
 
-> The `useLogin` hook provides 4 methods for logging in with different signers, and 1 method for logging out:
->
-> - `loginWithExtention`: Login with Nostr Extention (NIP07).
-> - `loginWithRemoteSigner`: Login with Remote Signer (NIP46).
-> - `loginWithSecretKey`: Login with Secret Key.
-> - `loginFromLocalStorage`: Login from previously saved login method in local storage.
-> - `logout`: Logout.
+The `useLogin` hook provides 4 methods for logging in with different signers, and 1 method for logging out:
+
+- `loginWithExtention`: Login with Nostr Extention (NIP07).
+- `loginWithRemoteSigner`: Login with Remote Signer (NIP46).
+- `loginWithSecretKey`: Login with Secret Key.
+- `loginFromLocalStorage`: Login from previously saved login method in local storage.
+- `logout`: Logout.
 
 ```jsx
 import { useLogin } from 'nostr-hooks';
@@ -400,6 +400,28 @@ const MyComponent = () => {
   );
 };
 ```
+
+#### Using a custom NDK instance:
+
+If you are using a custom NDK instance, you can pass it to the `useLogin` hook along with its setter function to update your custom NDK instance with the new signer instead of the default NDK instance.
+
+```tsx
+import { useLogin } from 'nostr-hooks';
+
+const MyComponent = () => {
+  const [customNdk, setCustomNdk] = useState<NDK>(
+    new NDK({
+      /* ... */
+    })
+  );
+
+  const { loginWithExtention } = useLogin({ customNdk, setCustomNdk });
+
+  return <button onClick={() => loginWithExtention()}>Login with Extention</button>;
+};
+```
+
+#### Automatically login with previously saved login method:
 
 You can also use `useAutoLogin` hook to automatically login with previously saved login method in local storage when the component mounts.
 

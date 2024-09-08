@@ -11,19 +11,25 @@ type ProfileParams = {
   relayUrls?: string[];
 };
 
-export const useProfile = (profileParams?: ProfileParams, ndk?: NDK) => {
+/**
+ * Custom hook for fetching a user profile.
+ *
+ * @param profileParams - Optional parameters for fetching the user profile.
+ * @param customNdk - Optional custom NDK instance.
+ * @returns An object containing the user profile or null.
+ */
+export const useProfile = (profileParams?: ProfileParams, customNdk?: NDK) => {
   const [profile, setProfile] = useState<NDKUserProfile | null>(null);
 
-  const { ndk: _ndk } = useNdk();
+  // Get reactive NDK instance from the global store
+  const { ndk: globalNdk } = useNdk();
+
+  // Use the custom NDK instance if provided
+  const ndk = customNdk || globalNdk;
 
   useEffect(() => {
     if (!profileParams) return;
     if (profileParams.constructor === Object && Object.keys(profileParams).length === 0) return;
-
-    if (!ndk) {
-      ndk = _ndk;
-    }
-
     if (!ndk) return;
 
     ndk
@@ -32,7 +38,7 @@ export const useProfile = (profileParams?: ProfileParams, ndk?: NDK) => {
       .then((profile) => {
         setProfile(profile);
       });
-  }, [profileParams, _ndk, ndk]);
+  }, [profileParams, ndk]);
 
   return { profile };
 };
