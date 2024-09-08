@@ -1,5 +1,9 @@
 # Nostr-Hooks
 
+## 2.9.8
+
+- Added support for custom NDK instances. Now you can pass a custom NDK instance to all the hooks, but you need to execute `ndk.connect()` manually once you create a custom NDK instance.
+
 ## 2.9.2
 
 - Replaces `useProfiles` with `useProfile` hook.
