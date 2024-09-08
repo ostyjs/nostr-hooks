@@ -1,5 +1,13 @@
 # Nostr-Hooks
 
+## 2.9.9
+
+- Fixed a typo from `loginWithExtention` to `loginWithExtension`.
+
+### Breaking Changes
+
+- Fixed a typo from `loginWithExtention` to `loginWithExtension`. Now you need to use `loginWithExtension` instead of `loginWithExtention`.
+
 ## 2.9.8
 
 - Added support for custom NDK instances. Now you can pass a custom NDK instance to all the hooks, but you need to execute `ndk.connect()` manually once you create a custom NDK instance.
