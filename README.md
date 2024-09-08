@@ -371,7 +371,7 @@ You can use the `useLogin` hook to login with different signers. This hook will 
 
 The `useLogin` hook provides 4 methods for logging in with different signers, and 1 method for logging out:
 
-- `loginWithExtention`: Login with Nostr Extention (NIP07).
+- `loginWithExtension`: Login with Nostr Extension (NIP07).
 - `loginWithRemoteSigner`: Login with Remote Signer (NIP46).
 - `loginWithSecretKey`: Login with Secret Key.
 - `loginFromLocalStorage`: Login from previously saved login method in local storage.
@@ -382,7 +382,7 @@ import { useLogin } from 'nostr-hooks';
 
 const MyComponent = () => {
   const {
-    loginWithExtention,
+    loginWithExtension,
     loginWithRemoteSigner,
     loginWithSecretKey,
     loginFromLocalStorage,
@@ -391,7 +391,7 @@ const MyComponent = () => {
 
   return (
     <>
-      <button onClick={() => loginWithExtention()}>Login with Extention</button>
+      <button onClick={() => loginWithExtension()}>Login with Extension</button>
       <button onClick={() => loginWithRemoteSigner()}>Login with Remote Signer</button>
       <button onClick={() => loginWithSecretKey()}>Login with Secret Key</button>
       <button onClick={() => loginFromLocalStorage()}>Login from Local Storage</button>
@@ -415,9 +415,9 @@ const MyComponent = () => {
     })
   );
 
-  const { loginWithExtention } = useLogin({ customNdk, setCustomNdk });
+  const { loginWithExtension } = useLogin({ customNdk, setCustomNdk });
 
-  return <button onClick={() => loginWithExtention()}>Login with Extention</button>;
+  return <button onClick={() => loginWithExtension()}>Login with Extension</button>;
 };
 ```
 

@@ -24,7 +24,7 @@ type Params = {
  *
  * @param params - Optional parameters for custom NDK instance and its setter function.
  * @returns An object containing the following methods:
- * - `loginWithExtention`: A function for logging in with the extension method (NIP07).
+ * - `loginWithExtension`: A function for logging in with the extension method (NIP07).
  * - `loginWithRemoteSigner`: A function for logging in with the remote signer method (NIP46).
  * - `loginWithSecretKey`: A function for logging in with the secret key method.
  * - `reLoginFromLocalStorage`: A function for re-logging in from previously stored login method in local storage.
@@ -46,7 +46,7 @@ export const useLogin = (params?: Params) => {
   const { ndk } = useNdk();
   const { signer, setSigner } = useSigner(params);
 
-  const loginWithExtention = useCallback(
+  const loginWithExtension = useCallback(
     (options?: { onSuccess?: (signer: NDKNip07Signer) => void; onError?: (err: any) => void }) => {
       const signer = new NDKNip07Signer();
 
@@ -181,7 +181,7 @@ export const useLogin = (params?: Params) => {
 
       switch (localLoginMethod) {
         case LoginMethod.Extension:
-          loginWithExtention({
+          loginWithExtension({
             onSuccess: (signer) => {
               options?.onSuccess?.(signer);
             },
@@ -215,7 +215,7 @@ export const useLogin = (params?: Params) => {
           break;
       }
     },
-    [signer, localLoginMethod, loginWithExtention, loginWithRemoteSigner, loginWithSecretKey]
+    [signer, localLoginMethod, loginWithExtension, loginWithRemoteSigner, loginWithSecretKey]
   );
 
   const logout = useCallback(() => {
@@ -227,7 +227,7 @@ export const useLogin = (params?: Params) => {
   }, [setLocalLoginMethod, setLocalNip46Address, setLocalSecretKey, setSigner]);
 
   return {
-    loginWithExtention,
+    loginWithExtension,
     loginWithRemoteSigner,
     loginWithSecretKey,
     loginFromLocalStorage,
