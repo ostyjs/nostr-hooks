@@ -43,7 +43,12 @@ export const useLogin = (params?: Params) => {
     undefined
   );
 
-  const { ndk } = useNdk();
+  // Get reactive NDK instance from the global store
+  const { ndk: globalNdk } = useNdk();
+
+  // Use the custom NDK instance if provided
+  const ndk = params?.customNdk || globalNdk;
+
   const { signer, setSigner } = useSigner(params);
 
   const loginWithExtension = useCallback(
