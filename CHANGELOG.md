@@ -1,5 +1,10 @@
 # Nostr-Hooks
 
+## 2.10.0
+
+- Added a `loadMore` function to the `useSubscribe` hook to fetch more events.
+- Added a `hasMore` boolean to the `useSubscribe` hook to check if there are more events to fetch.
+
 ## 2.9.9
 
 - Fixed a typo from `loginWithExtention` to `loginWithExtension`.
