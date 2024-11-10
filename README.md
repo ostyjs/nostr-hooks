@@ -118,12 +118,14 @@ The `useSubscribe` hook takes an object with one mandatory and some optional par
 
 > There are lots of options available for creating a subscription. [Read more about the NDK subscription options here](https://github.com/nostr-dev-kit/ndk)
 
-The `useSubscribe` hook returns an object with four properties:
+The `useSubscribe` hook returns an object with a few properties:
 
 - `events`: An array of events that match the filters.
 - `eose`: A boolean flag indicating whether the subscription has reached the end of the stream.
 - `unSubscribe`: A function that can be used to unsubscribe from the subscription.
 - `isSubscribed`: A boolean flag indicating whether the subscription is active.
+- `hasMore`: A boolean flag indicating whether there are more events available to fetch.
+- `loadMore`: A function that can be used to fetch more events.
 
 ⚠️ **Note** that since version 2.8.0, the `useSubscribe` hook is sensitive to all the input parameters. If any of the input parameters change, the hook will unsubscribe from the previous subscription and subscribe to the new one. This will help you to subscribe to different filters based on the input parameters. You need to make sure that the input parameters are memoized and don't change on every render to avoid **infinite re-render loops**.
 

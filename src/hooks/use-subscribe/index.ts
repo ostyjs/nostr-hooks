@@ -14,6 +14,7 @@ type State = {
   subscription: NDKSubscription | undefined;
   eose: boolean;
   events: NDKEvent[];
+  hasMore: boolean;
 };
 
 type UseSubscribeParams = {
@@ -34,7 +35,7 @@ type UseSubscribeParams = {
  * @param relays - Optional array of relay URLs to use for this subscription.
  * @param fetchProfiles - Optional boolean indicating whether to fetch profiles for the events. Default is false.
  * @param customNdk - Optional NDK instance to use for the subscription instead of the global NDK instance.
- * @returns An object containing the sorted events, subscription status, end of stream flag, and an unSubscribe function.
+ * @returns An object containing the sorted events, subscription status, end of stream flag, an unSubscribe function, a loadMore function, and a hasMore flag.
  */
 export const useSubscribe = ({
   filters,
@@ -49,6 +50,7 @@ export const useSubscribe = ({
     subscription: undefined,
     eose: false,
     events: [],
+    hasMore: false,
   });
 
   // Create a store ref for each instance of the hook
@@ -68,6 +70,7 @@ export const useSubscribe = ({
   const subscription = useStoreRef.current((state) => state.subscription);
   const eose = useStoreRef.current((state) => state.eose);
   const events = useStoreRef.current((state) => state.events);
+  const hasMore = useStoreRef.current((state) => state.hasMore);
 
   // Sort the events by created_at timestamp
   const sortedEvents: NDKEvent[] = useMemo(
@@ -75,11 +78,64 @@ export const useSubscribe = ({
     [events]
   );
 
+  const earliestEvent = useMemo(() => sortedEvents[sortedEvents.length - 1], [sortedEvents]);
+
   // Unsubscribe function for external use
   const unSubscribe = useCallback(() => {
     useStoreRef.current.getState().subscription?.stop();
     useStoreRef.current.setState({ subscription: undefined });
   }, []);
+
+  // Load more function for pagination
+  const loadMore = useCallback(
+    async (limit?: number) => {
+      if (!earliestEvent || !eose || !hasMore) return;
+
+      const untilTimestamp = earliestEvent.created_at! - 1;
+
+      const relaySet =
+        relays && relays.length > 0 ? NDKRelaySet.fromRelayUrls(relays, ndk) : undefined;
+
+      const additionalFilters = filters.map(
+        (filter) =>
+          ({
+            ...filter,
+            limit: limit || filter.limit,
+            until: untilTimestamp,
+          }) as NDKFilter
+      );
+
+      const fetchedEvents = await ndk.fetchEvents(additionalFilters, opts, relaySet);
+
+      if (fetchedEvents.size == 0) {
+        useStoreRef.current.setState({ hasMore: false });
+
+        return;
+      }
+
+      if (fetchProfiles) {
+        // Fetch profiles for the events
+        await Promise.all(
+          [...fetchedEvents].map(async (event) => {
+            if (event.author.profile === undefined) {
+              await event.author.fetchProfile();
+            }
+            return event;
+          })
+        );
+      }
+
+      // Update state, avoid duplicates
+      useStoreRef.current.setState((state) => {
+        const newEvents = [...fetchedEvents].filter(
+          (event) => !state.events.some((e) => e.id === event.id)
+        );
+
+        return { events: [...state.events, ...newEvents] };
+      });
+    },
+    [earliestEvent, eose, fetchProfiles, filters, opts, relays, ndk, hasMore]
+  );
 
   useEffect(() => {
     // Stop the subscription if it is already running
@@ -112,6 +168,10 @@ export const useSubscribe = ({
       newSubscription.on('eose', () => {
         useStoreRef.current.setState({ eose: true });
 
+        if (useStoreRef.current.getState().events.length > 0) {
+          useStoreRef.current.setState({ hasMore: true });
+        }
+
         if (opts?.closeOnEose) {
           newSubscription.stop();
           useStoreRef.current.setState({ subscription: undefined });
@@ -131,5 +191,12 @@ export const useSubscribe = ({
     };
   }, [enabled, fetchProfiles, filters, opts, relays, ndk]);
 
-  return { events: sortedEvents, eose, isSubscribed: !!subscription, unSubscribe };
+  return {
+    events: sortedEvents,
+    eose,
+    isSubscribed: !!subscription,
+    unSubscribe,
+    loadMore,
+    hasMore,
+  };
 };
