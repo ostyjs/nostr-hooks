@@ -38,7 +38,14 @@ export const useProfile = (profileParams?: ProfileParams, customNdk?: NDK) => {
       .then((profile) => {
         setProfile(profile);
       });
-  }, [profileParams, ndk]);
+  }, [
+    profileParams?.nip05,
+    profileParams?.pubkey,
+    profileParams?.npub,
+    profileParams?.nip46Urls,
+    profileParams?.relayUrls,
+    ndk,
+  ]);
 
   return { profile };
 };
