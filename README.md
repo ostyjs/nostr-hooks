@@ -47,37 +47,45 @@ Nostr-Hooks also provides a bunch of well-designed high-level hooks to interact 
 npm install nostr-hooks
 ```
 
-### Initialize NostrHooks
+### First create a store
 
-You need to initialize NostrHooks in your root component. This will execute `ndk.connect()` under the hood and create a single instance of Nostr pool for the entire application that can be reused by all components.
+Your store is a hook that will be used to manage the NDK instance and its Signer.
 
-```jsx
-import { useNostrHooks } from 'nostr-hooks';
+```tsx
+// use-ndk.ts
+
+import { createStore } from 'nostr-hooks';
+
+export const useNdk = createStore('ndk-store'); // with unique store name
+```
+
+> You should provide unique names for your stores – This will be used as the key in the localStorage.
+
+### Then do some setup
+
+Initialize the Ndk instance, and connect to it.
+
+```tsx
+import { useNdk } from './use-ndk';
 
 const App = () => {
-  useNostrHooks();
+  const { initNdk, ndk } = useNdk();
 
-  return <YourApp />;
+  useEffect(() => {
+    initNdk({
+      // NDK Constructor Options
+    });
+  }, [initNdk]);
+
+  useEffect(() => {
+    ndk?.connect(); // This will also reconnect when the instance changes
+  }, [ndk]);
+
+  return <div>My App</div>;
 };
 ```
 
-You can also pass a custom NDK instance to the `useNostrHooks` hook. This is useful when you want to initiate your app with a custom NDK instance with your own configuration.
-
-```jsx
-import { useNostrHooks } from 'nostr-hooks';
-
-const customNDK = new NDK({
-  /* ... */
-});
-
-const App = () => {
-  useNostrHooks(customNDK);
-
-  return <YourApp />;
-};
-```
-
-> ⚠️ Remember to use memoization techniques like `useMemo` to prevent re-creating the custom NDK instance on every render and avoid infinite re-render loops.
+> Calling `initNdk` and `ndk.connect` are mandatory to start using Nostr-Hooks.
 
 ### Subscribe to events
 
@@ -85,13 +93,15 @@ Here are some examples of how to use the `useSubscribe` hook:
 
 #### Example 1: Basic usage:
 
-```jsx
+```tsx
 import { useSubscribe } from 'nostr-hooks';
+import { useNdk } from './use-ndk';
 
 const filters = [{ authors: ['pubkey1'], kinds: [1] }];
 
 const MyComponent = () => {
-  const { events } = useSubscribe({ filters });
+  const { ndk } = useNdk();
+  const { events } = useSubscribe(ndk, { filters });
 
   if (!events) return <p>Loading...</p>;
 
@@ -108,13 +118,15 @@ const MyComponent = () => {
 };
 ```
 
-The `useSubscribe` hook takes an object with one mandatory and some optional parameters:
+The `useSubscribe` hook takes two parameters:
 
-- `filters`: A mandatory array of filters that the subscription should be created for.
-- `enabled`: An optional boolean flag indicating whether the subscription is enabled. If set to `false`, the subscription will not be created automatically.
-- `opts`: An optional "NDK Subscription Options" object.
-- `relays`: An optional array of relay urls to use for the subscription. If not provided, the default relays will be used.
-- `fetchProfiles`: An optional boolean flag indicating whether to fetch profiles for the events in the subscription. If set to `true`, the profiles will be fetched automatically.
+- `ndk`: The NDK instance to use for the subscription.
+- `options`: An object with the following properties:
+  - `filters`: A mandatory array of filters that the subscription should be created for.
+  - `enabled`: An optional boolean flag indicating whether the subscription is enabled. If set to `false`, the subscription will not be created automatically.
+  - `opts`: An optional "NDK Subscription Options" object.
+  - `relays`: An optional array of relay urls to use for the subscription. If not provided, the default relays will be used.
+  - `fetchProfiles`: An optional boolean flag indicating whether to fetch profiles for the events in the subscription. If set to `true`, the profiles will be fetched automatically.
 
 > There are lots of options available for creating a subscription. [Read more about the NDK subscription options here](https://github.com/nostr-dev-kit/ndk)
 
@@ -131,9 +143,11 @@ The `useSubscribe` hook returns an object with a few properties:
 
 🚫 Don't:
 
-```jsx
+```tsx
 const MyComponent = ({ pubkey }) => {
-  const { events } = useSubscribe({ filters: [{ authors: [pubkey], kinds: [1] }] });
+  const { ndk } = useNdk();
+
+  const { events } = useSubscribe(ndk, { filters: [{ authors: [pubkey], kinds: [1] }] });
 
   // ...
 };
@@ -141,11 +155,13 @@ const MyComponent = ({ pubkey }) => {
 
 ✅ Do:
 
-```jsx
+```tsx
 const MyComponent = ({ pubkey }) => {
-  const filters = useMemo(() => [{ authors: [pubkey], kinds: [1] }], [pubkey]);
+  const { ndk } = useNdk();
 
-  const { events } = useSubscribe({ filters });
+  const options = useMemo(() => ({ filters: [{ authors: [pubkey], kinds: [1] }] }), [pubkey]);
+
+  const { events } = useSubscribe(ndk, options);
 
   // ...
 };
@@ -153,17 +169,20 @@ const MyComponent = ({ pubkey }) => {
 
 #### Example 2: Using multiple subscriptions in a single component:
 
-```jsx
+```tsx
 import { useSubscribe } from 'nostr-hooks';
+import { useNdk } from './use-ndk';
 
 // You can define filters outside the component to prevent re-creating them on every render
 const articlesFilters = [{ authors: ['pubkey'], kinds: [30023] }];
 const notesFilters = [{ authors: ['pubkey'], kinds: [1] }];
 
 const MyComponent = () => {
-  const { events: articles } = useSubscribe({ filters: articlesFilters });
+  const { ndk } = useNdk();
 
-  const { events: notes } = useSubscribe({ filters: notesFilters });
+  const { events: articles } = useSubscribe(ndk, { filters: articlesFilters });
+
+  const { events: notes } = useSubscribe(ndk, { filters: notesFilters });
 
   return (
     <>
@@ -193,7 +212,7 @@ The `useSubscribe` hook can be used multiple times in a single component. Nostr-
 
 #### Example 3: Using subscriptions in multiple components:
 
-```jsx
+```tsx
 import { useSubscribe } from 'nostr-hooks';
 
 const App = () => {
@@ -206,8 +225,10 @@ const App = () => {
 };
 
 const ComponentA = () => {
+  const { ndk } = useNdk();
+
   const filters = useMemo(() => [{ authors: ['pubkey'], kinds: [1] }], []);
-  const { events } = useSubscribe({ filters });
+  const { events } = useSubscribe(ndk, { filters });
 
   return (
     <ul>
@@ -222,8 +243,10 @@ const ComponentA = () => {
 };
 
 const ComponentB = () => {
+  const { ndk } = useNdk();
+
   const filters = useMemo(() => [{ authors: ['pubkey'], kinds: [30023] }], []);
-  const { events } = useSubscribe({ filters });
+  const { events } = useSubscribe(ndk, { filters });
 
   return (
     <ul>
@@ -242,14 +265,22 @@ The `useSubscribe` hook can be used in multiple components. Nostr-Hooks batches 
 
 #### Example 4: Dependent subscriptions:
 
-```jsx
+```tsx
 import { useSubscribe } from 'nostr-hooks';
 
 const MyComponent = ({ noteId }: Params) => {
-  const { events } = useSubscribe(useMemo(() => ({
-    filters: [{ ids: [noteId] }],
-    enabled: !!noteId,
-  }), [noteId]));
+  const { ndk } = useNdk();
+
+  const { events } = useSubscribe(
+    ndk,
+    useMemo(
+      () => ({
+        filters: [{ ids: [noteId] }],
+        enabled: !!noteId,
+      }),
+      [noteId]
+    )
+  );
 
   return (
     <>
@@ -268,20 +299,60 @@ const MyComponent = ({ noteId }: Params) => {
 
 The `useSubscribe` hook can be used in a component that depends on a prop or state. In this example, the subscription waits for the `noteId` prop to be set before creating the subscription.
 
+#### Example 5: Using different ndk instances:
+
+```tsx
+import { useSubscribe } from 'nostr-hooks';
+import { useGlobalNdk } from './use-global-ndk';
+import { useSpecificNdk } from './use-specific-ndk';
+
+const MyComponent = () => {
+  const { ndk: globalNdk } = useGlobalNdk();
+  const { ndk: specificNdk } = useSpecificNdk();
+
+  const filters = useMemo(() => [{ authors: ['pubkey'], kinds: [1] }], []);
+  const { events: globalEvents } = useSubscribe(globalNdk, { filters });
+  const { events: specificEvents } = useSubscribe(specificNdk, { filters });
+
+  return (
+    <>
+      <ul>
+        {globalEvents.map((event) => (
+          <li key={event.id}>
+            <p>{event.pubkey}</p>
+            <p>{event.content}</p>
+          </li>
+        ))}
+      </ul>
+
+      <ul>
+        {specificEvents.map((event) => (
+          <li key={event.id}>
+            <p>{event.pubkey}</p>
+            <p>{event.content}</p>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+};
+```
+
 ### Publish new events
 
-The `useNewEvent` hook is used to create a new NDK event, which can then be published using the internal `publish` method.
+You can publish new events using the `NDKEvent` class and the `publish` method.
 
-```jsx
-import { useNewEvent } from 'nostr-hooks';
+```tsx
+import { NDKEvent } from 'nostr-dev-kit';
+import { useNdk } from './use-ndk';
 
 const MyComponent = () => {
   const [content, setContent] = useState('');
 
-  const { createNewEvent } = useNewEvent();
+  const { ndk } = useNdk();
 
   const handlePublish = () => {
-    const event = createNewEvent();
+    const event = new NDKEvent(ndk);
     event.content = content;
     event.kind = 1;
 
@@ -298,15 +369,16 @@ const MyComponent = () => {
 };
 ```
 
-> There is also a `usePublish` hook that can be used to publish an existing NDK event.
-
 ### Fetch Profile for a user
 
 The `useProfile` hook is used to fetch profile for a given user based on their `pubkey`, `npub`, `nip46 address`, or `nip05`. It returns the fetched profile.
 
-```jsx
+```tsx
+import { useProfile } from 'nostr-hooks';
+import { useNdk } from './use-ndk';
+
 const MyComponent = () => {
-  const { profile } = useProfile({ pubkey: '...' });
+  const { profile } = useProfile(ndk, { pubkey: '...' });
 
   return (
     <div>
@@ -317,70 +389,38 @@ const MyComponent = () => {
 };
 ```
 
-> You can also pass an optional `ndk` parameter to the `useProfile` hook to fetch the profile using a custom NDK instance.
-
-### Interact with NDK instance
-
-You can leverage `useNdk` hook to interact with the NDK instance. it returns the NDK instance itself, and a setter function for updating the NDK instance.
-
-```jsx
-import { useNdk } from 'nostr-hooks';
-
-const newNdk = new NDK({
-  /* ... */
-});
-
-const MyComponent = () => {
-  const { ndk, setNdk } = useNdk();
-
-  // You can use the ndk instance to interact with the NDK library
-  // Example:
-  ndk.getUser({ npub: 'npub1...' }); // Get a user by their npub
-
-  // You can also update the NDK instance using the setNdk function
-  // Example:
-  setNdk(newNdk); // this will replace the existing NDK instance with the new one
-};
-```
-
 ### Interact with Signer
 
-You can leverage `useSigner` hook to interact with the signer. it returns the signer itself, and a setter function for updating the signer.
+You can leverage `useSigner` hook to interact with the signer.
 
-```jsx
-import { useSigner } from 'nostr-hooks';
+```tsx
+import { useNdk } from './use-ndk';
 
 const newSigner = new NDKNip07Signer();
 
 const MyComponent = () => {
-  const { signer, setSigner } = useSigner();
+  const { ndk, setSigner } = useNdk();
 
-  // You can use the signer instance to interact with the signer
-  // Example:
-  signer.sign(event); // Sign an event
-
-  // You can also update the signer using the setSigner function
-  // Example:
   setSigner(newSigner); // this will keep the existing NDK instance and update its signer
 };
 ```
 
-> You may not need to use the `useSigner` hook directly, as it's used internally by the `useLogin` hook.
+> You may not need to use the `useSigner` hook directly. See the next section for more information.
 
 ### Login with different signers
 
-You can use the `useLogin` hook to login with different signers. This hook will automatically update the NDK instance with the new signer. It also uses local storage to persist the login method, so the user doesn't need to login manually every time the page reloads or the app restarts.
+You can use the various login methods provided by the created Zustand store. These hooks will automatically update the NDK instance with the new signer. These also use local storage to persist the login method, so the user doesn't need to login manually every time the page reloads or the app restarts.
 
-The `useLogin` hook provides 4 methods for logging in with different signers, and 1 method for logging out:
+We provide 4 methods for logging in with different signers, and 1 method for logging out:
 
 - `loginWithExtension`: Login with Nostr Extension (NIP07).
 - `loginWithRemoteSigner`: Login with Remote Signer (NIP46).
-- `loginWithSecretKey`: Login with Secret Key.
+- `loginWithPrivateKey`: Login with Private Key.
 - `loginFromLocalStorage`: Login from previously saved login method in local storage.
 - `logout`: Logout.
 
-```jsx
-import { useLogin } from 'nostr-hooks';
+```tsx
+import { useNdk } from './use-ndk';
 
 const MyComponent = () => {
   const {
@@ -389,7 +429,7 @@ const MyComponent = () => {
     loginWithSecretKey,
     loginFromLocalStorage,
     logout,
-  } = useLogin();
+  } = useNdk();
 
   return (
     <>
@@ -403,47 +443,33 @@ const MyComponent = () => {
 };
 ```
 
-#### Using a custom NDK instance:
-
-If you are using a custom NDK instance, you can pass it to the `useLogin` hook along with its setter function to update your custom NDK instance with the new signer instead of the default NDK instance.
-
-```tsx
-import { useLogin } from 'nostr-hooks';
-
-const MyComponent = () => {
-  const [customNdk, setCustomNdk] = useState<NDK>(
-    new NDK({
-      /* ... */
-    })
-  );
-
-  const { loginWithExtension } = useLogin({ customNdk, setCustomNdk });
-
-  return <button onClick={() => loginWithExtension()}>Login with Extension</button>;
-};
-```
-
 #### Automatically login with previously saved login method:
 
-You can also use `useAutoLogin` hook to automatically login with previously saved login method in local storage when the component mounts.
+You can use `loginFromLocalStorage` to automatically login with previously saved login method in local storage when the component mounts.
 
-```jsx
-import { useAutoLogin } from 'nostr-hooks';
+```tsx
+import { useNdk } from './use-ndk';
 
 const MyComponent = () => {
-  useAutoLogin();
+  const { loginFromLocalStorage } = useNdk();
+
+  useEffect(() => {
+    loginFromLocalStorage();
+  }, [loginFromLocalStorage]);
 };
 ```
 
 ### Getting the Active User Profile
 
-You can use the `useActiveUser` hook to get the active user's profile based on the current NDK instance and its signer.
+You can use the `useActiveUser` hook to get the active user's profile based on the provided NDK instance and its signer.
 
-```jsx
+```tsx
 import { useActiveUser } from 'nostr-hooks';
+import { useNdk } from './use-ndk';
 
 const MyComponent = () => {
-  const { activeUser } = useActiveUser();
+  const { ndk } = useNdk();
+  const { activeUser } = useActiveUser(ndk);
 
   if (!activeUser) return <p>Not logged in</p>;
 
