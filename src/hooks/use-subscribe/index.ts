@@ -8,8 +8,6 @@ import NDK, {
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { create } from 'zustand';
 
-import { useNdk } from '../use-ndk';
-
 type State = {
   subscription: NDKSubscription | undefined;
   eose: boolean;
@@ -23,28 +21,29 @@ type UseSubscribeParams = {
   enabled?: boolean | undefined;
   relays?: string[] | undefined;
   fetchProfiles?: boolean | undefined;
-  customNdk?: NDK | undefined;
 };
 
 /**
  * Hook for subscribing to events. Remember to use memoized params to avoid infinite re-render loops.
  *
+ * @param ndk - NDK instance to use for the subscription.
  * @param filters - An array of NDKFilter objects.
  * @param opts - Optional NDKSubscriptionOptions for configuring the subscription.
  * @param enabled - Optional boolean indicating whether the subscription is enabled. Default is true.
  * @param relays - Optional array of relay URLs to use for this subscription.
  * @param fetchProfiles - Optional boolean indicating whether to fetch profiles for the events. Default is false.
- * @param customNdk - Optional NDK instance to use for the subscription instead of the global NDK instance.
  * @returns An object containing the sorted events, subscription status, end of stream flag, an unSubscribe function, a loadMore function, and a hasMore flag.
  */
-export const useSubscribe = ({
-  filters,
-  opts = undefined,
-  enabled = true,
-  relays = undefined,
-  fetchProfiles = false,
-  customNdk = undefined,
-}: UseSubscribeParams) => {
+export const useSubscribe = (
+  ndk: NDK | undefined,
+  {
+    filters,
+    opts = undefined,
+    enabled = true,
+    relays = undefined,
+    fetchProfiles = false,
+  }: UseSubscribeParams
+) => {
   // Initial state
   const initialState = useRef({
     subscription: undefined,
@@ -59,12 +58,6 @@ export const useSubscribe = ({
       ...initialState.current,
     }))
   );
-
-  // Get reactive NDK instance from the global store
-  const { ndk: globalNdk } = useNdk();
-
-  // Use the custom NDK instance if provided
-  const ndk = customNdk || globalNdk;
 
   // Get reactive states from the store
   const subscription = useStoreRef.current((state) => state.subscription);
@@ -89,7 +82,7 @@ export const useSubscribe = ({
   // Load more function for pagination
   const loadMore = useCallback(
     async (limit?: number) => {
-      if (!earliestEvent || !eose || !hasMore) return;
+      if (!ndk || !earliestEvent || !eose || !hasMore) return;
 
       const untilTimestamp = earliestEvent.created_at! - 1;
 

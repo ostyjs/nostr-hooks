@@ -1,39 +1,43 @@
 import NDK, { NDKUser } from '@nostr-dev-kit/ndk';
 import { useEffect, useState } from 'react';
 
-import { useSigner } from '../use-signer';
-
 /**
  * Custom hook that retrieves the active user using the NDK instance and the signer.
  *
  * @param fetchProfile - Optional boolean indicating whether to fetch profile for the active user. Default is false.
  * @returns An object containing the active user or undefined if there is no active user.
  */
-export const useActiveUser = (params?: {
-  fetchProfile?: boolean | undefined;
-  customNdk?: NDK | undefined;
-}) => {
+export const useActiveUser = (ndk: NDK | undefined, fetchProfile?: boolean) => {
   const [activeUser, setActiveUser] = useState<NDKUser | undefined>(undefined);
 
-  const { signer } = useSigner(params?.customNdk ? { customNdk: params.customNdk } : undefined);
-
   useEffect(() => {
-    if (signer) {
-      signer.user().then((user) => {
-        if (!user) return;
-
-        if (params?.fetchProfile) {
-          user.fetchProfile().finally(() => {
-            setActiveUser(user);
-          });
-        } else {
-          setActiveUser(user);
-        }
-      });
-    } else {
+    if (!ndk) {
       setActiveUser(undefined);
+      return;
     }
-  }, [signer, params?.fetchProfile]);
+
+    const { signer } = ndk;
+    if (!signer) {
+      setActiveUser(undefined);
+      return;
+    }
+
+    signer.user().then((user) => {
+      if (!user) {
+        setActiveUser(undefined);
+        return;
+      }
+
+      if (!fetchProfile) {
+        setActiveUser(user);
+        return;
+      }
+
+      user.fetchProfile().finally(() => {
+        setActiveUser(user);
+      });
+    });
+  }, [ndk, fetchProfile]);
 
   return { activeUser };
 };

@@ -1,8 +1,6 @@
 import NDK, { NDKUserProfile } from '@nostr-dev-kit/ndk';
 import { useEffect, useState } from 'react';
 
-import { useNdk } from '../use-ndk';
-
 type ProfileParams = {
   nip05?: string;
   pubkey?: string;
@@ -14,18 +12,12 @@ type ProfileParams = {
 /**
  * Custom hook for fetching a user profile.
  *
+ * @param ndk - NDK instance to use for fetching the user profile.
  * @param profileParams - Optional parameters for fetching the user profile.
- * @param customNdk - Optional custom NDK instance.
  * @returns An object containing the user profile or null.
  */
-export const useProfile = (profileParams?: ProfileParams, customNdk?: NDK) => {
+export const useProfile = (ndk: NDK | undefined, profileParams?: ProfileParams) => {
   const [profile, setProfile] = useState<NDKUserProfile | null>(null);
-
-  // Get reactive NDK instance from the global store
-  const { ndk: globalNdk } = useNdk();
-
-  // Use the custom NDK instance if provided
-  const ndk = customNdk || globalNdk;
 
   useEffect(() => {
     if (!profileParams) return;
