@@ -1,5 +1,79 @@
 # Nostr-Hooks
 
+## 3.0.0
+
+This version is a major update that includes a lot of breaking changes and improvements.
+Please make sure to update your codebase according to the following changes.
+
+### Breaking Changes
+
+- Removed hooks:
+  - `useAutoLogin`
+  - `useLogin`
+  - `useNdk`
+  - `useNewEvent`
+  - `useNostrHooks`
+  - `useProfiles`
+  - `usePublish`
+  - `useSigner`
+- Modified hooks:
+  - `useActiveUser`
+  - `useProfile`
+  - `useSubscribe`
+- Added methods:
+  - `createStore`
+- Changed `secretKey` to `privateKey` everywhere.
+
+We used to have an internal NDK instace in the previous versions of Nostr-Hooks which was also accessible through the `useNdk` hook. Since that approach was not flexible enough, we decided to let the user create their own NDK instances as many as they want and pass them to the hooks in a more reactive way.
+To address this change, we let the user create multiple Zustand stores **(a Zustand store is a hook)** with the `createStore` function imported from `nostr-hooks` and use them to create and manage their own NDK instances in a more flexible and reactive way.
+This also fixes the issue with re-rendering the components when the NDK instance changes, for example, when the user logs-in with different methods.
+
+All the login related functionalities are moved from the legacy `useLogin` hook to any user created Zustand store. Also the `useAutoLogin` hook is removed so you just need to call the `loginFromLocalStorage` method from the Zustand store.
+
+As we removed the `useNostrHooks` hook, you need to execute the `ndk.connect()` method manually once you initialize the NDK instance with the `initNdk` method from the created Zustand store.
+
+As we removed the `useNewEvent` and `usePublish` hooks, you can simply use `new NDKEvent()` and `event.publish()` instead.
+
+The `useNdk` and `useSigner` hooks are removed and you can simply use the `initNdk` and `setSigner` methods from the created Zustand store.
+
+You can find more information about the new changes in the README.
+
+### Summary of the new approach
+
+1. Create a Zustand store with the `createStore` function:
+
+```ts
+// use-ndk.ts
+
+import { createStore } from 'nostr-hooks';
+
+export const useNdk = createStore('ndk-store'); // with unique store name
+```
+
+2. Initialize the NDK instance with the `initNdk` method and connect to the NDK with the `ndk.connect()` method:
+
+```tsx
+// App.tsx
+
+import { useNdk } from './use-ndk';
+
+export const App = () => {
+  const { initNdk, ndk } = useNdk();
+
+  useEffect(() => {
+    initNdk({
+      // NDK Constructor Options
+    });
+  }, [initNdk]);
+
+  useEffect(() => {
+    ndk?.connect();
+  }, [ndk]);
+
+  return <div>{/* Your app */}</div>;
+};
+```
+
 ## 2.10.0
 
 - Added a `loadMore` function to the `useSubscribe` hook to fetch more events.
