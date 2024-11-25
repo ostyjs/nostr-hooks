@@ -5,6 +5,7 @@ import NDK, {
   NDKPrivateKeySigner,
   NDKSigner,
 } from '@nostr-dev-kit/ndk';
+import { produce } from 'immer';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -64,53 +65,69 @@ export const useStore = create<State & Actions>()(
 
         // ndk actions
         initNdk: (constructorParams) => {
+        if (!constructorParams) return;
+
           const ndk = new NDK(constructorParams);
 
-          set({ constructorParams, ndk });
+        set(
+          produce((state) => {
+            state.constructorParams = constructorParams;
+            state.ndk = ndk;
+          })
+        );
         },
 
         setSigner: (signer) => {
           const newConstructorParams = { ...get().constructorParams };
 
-          if (!signer) {
+        set(
+          produce((state) => {
+            if (signer) {
+              newConstructorParams.signer = signer;
+            } else {
             delete newConstructorParams.signer;
-          } else {
-            newConstructorParams.signer = signer;
-          }
+            }
 
-          get().initNdk(newConstructorParams);
+            const ndk = new NDK(newConstructorParams);
+
+            state.ndk = ndk;
+          })
+        );
         },
 
         // login actions
         loginWithExtension: ({
           onError,
           onSuccess,
-        }: { onError?: (err: any) => void; onSuccess?: (signer: NDKNip07Signer) => void } = {}) => {
+      }: {
+        onError?: (err: any) => void;
+        onSuccess?: (signer: NDKNip07Signer) => void;
+      } = {}) => {
           const signer = new NDKNip07Signer();
 
           signer
             .blockUntilReady()
             .then(() => {
-              set({
-                loginData: {
-                  loginMethod: 'Extension',
-                  nip46Address: undefined,
-                  privateKey: undefined,
-                },
-              });
+            set(
+              produce((state) => {
+                state.loginData.privateKey = undefined;
+                state.loginData.loginMethod = 'Extension';
+                state.loginData.nip46Address = undefined;
+              })
+            );
 
               get().setSigner(signer);
 
               onSuccess?.(signer);
             })
             .catch((err) => {
-              set({
-                loginData: {
-                  privateKey: undefined,
-                  loginMethod: undefined,
-                  nip46Address: undefined,
-                },
-              });
+            set(
+              produce((state) => {
+                state.loginData.privateKey = undefined;
+                state.loginData.loginMethod = undefined;
+                state.loginData.nip46Address = undefined;
+              })
+            );
 
               onError?.(err);
             });
@@ -135,9 +152,14 @@ export const useStore = create<State & Actions>()(
           const _addr = !nip46Address ? get().loginData.nip46Address : nip46Address;
 
           if (!_addr) {
-            set({
-              loginData: { privateKey: undefined, loginMethod: undefined, nip46Address: undefined },
-            });
+          set(
+            produce((state) => {
+              state.loginData.privateKey = undefined;
+              state.loginData.loginMethod = undefined;
+              state.loginData.nip46Address = undefined;
+            })
+          );
+
             onError?.('NIP46 address is empty');
 
             return;
@@ -152,26 +174,26 @@ export const useStore = create<State & Actions>()(
           signer
             .blockUntilReady()
             .then(() => {
-              set({
-                loginData: {
-                  loginMethod: 'Remote',
-                  nip46Address: _addr,
-                  privateKey: undefined,
-                },
-              });
+            set(
+              produce((state) => {
+                state.loginData.privateKey = undefined;
+                state.loginData.loginMethod = 'Remote';
+                state.loginData.nip46Address = _addr;
+              })
+            );
 
               get().setSigner(signer);
 
               onSuccess?.(signer);
             })
             .catch((err) => {
-              set({
-                loginData: {
-                  privateKey: undefined,
-                  loginMethod: undefined,
-                  nip46Address: undefined,
-                },
-              });
+            set(
+              produce((state) => {
+                state.loginData.privateKey = undefined;
+                state.loginData.loginMethod = undefined;
+                state.loginData.nip46Address = undefined;
+              })
+            );
 
               onError?.(err);
             });
@@ -191,26 +213,26 @@ export const useStore = create<State & Actions>()(
           signer
             .blockUntilReady()
             .then(() => {
-              set({
-                loginData: {
-                  loginMethod: 'PrivateKey',
-                  nip46Address: undefined,
-                  privateKey,
-                },
-              });
+            set(
+              produce((state) => {
+                state.loginData.privateKey = privateKey;
+                state.loginData.loginMethod = 'PrivateKey';
+                state.loginData.nip46Address = undefined;
+              })
+            );
 
               get().setSigner(signer);
 
               onSuccess?.(signer);
             })
             .catch((err) => {
-              set({
-                loginData: {
-                  privateKey: undefined,
-                  loginMethod: undefined,
-                  nip46Address: undefined,
-                },
-              });
+            set(
+              produce((state) => {
+                state.loginData.privateKey = undefined;
+                state.loginData.loginMethod = undefined;
+                state.loginData.nip46Address = undefined;
+              })
+            );
 
               onError?.(err);
             });
@@ -229,13 +251,13 @@ export const useStore = create<State & Actions>()(
         },
 
         logout: () => {
-          set({
-            loginData: {
-              privateKey: undefined,
-              loginMethod: undefined,
-              nip46Address: undefined,
-            },
-          });
+        set(
+          produce((state) => {
+            state.loginData.privateKey = undefined;
+            state.loginData.loginMethod = undefined;
+            state.loginData.nip46Address = undefined;
+          })
+        );
 
           get().setSigner(undefined);
         },
