@@ -9,6 +9,18 @@ import { produce } from 'immer';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import {
+  CreateSubscription,
+  InitNdk,
+  LoginData,
+  LoginWithExtension,
+  LoginWithPrivateKey,
+  LoginWithRemoteSigner,
+  RemoveSubscription,
+  SetSigner,
+  Subscriptions,
+} from '../types';
+
 type State = {
   // ndk state
   constructorParams: NDKConstructorParams | undefined;
@@ -16,34 +28,20 @@ type State = {
   ndk: NDK | undefined;
 
   // login state
-  loginData: {
-    privateKey: string | undefined;
-    loginMethod: 'Extension' | 'Remote' | 'PrivateKey' | undefined;
-    nip46Address: string | undefined;
-  };
+  loginData: LoginData;
 };
 
 type Actions = {
   // ndk actions
-  initNdk: (constructorParams?: NDKConstructorParams) => void;
+  initNdk: InitNdk;
 
-  setSigner: (signer: NDKSigner | undefined) => void;
+  setSigner: SetSigner;
+
 
   // login actions
-  loginWithExtension: (options?: {
-    onError?: (err: any) => void;
-    onSuccess?: (signer: NDKNip07Signer) => void;
-  }) => void;
-  loginWithRemoteSigner: (options?: {
-    nip46Address?: string | undefined;
-    onError?: (err: unknown) => void;
-    onSuccess?: (signer: NDKNip46Signer) => void;
-  }) => void;
-  loginWithPrivateKey: (options?: {
-    privateKey?: string | undefined;
-    onError?: (err: unknown) => void;
-    onSuccess?: (signer: NDKPrivateKeySigner) => void;
-  }) => void;
+  loginWithExtension: LoginWithExtension;
+  loginWithRemoteSigner: LoginWithRemoteSigner;
+  loginWithPrivateKey: LoginWithPrivateKey;
   loginFromLocalStorage: () => void;
   logout: () => void;
 };
