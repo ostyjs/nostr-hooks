@@ -47,8 +47,7 @@ type Actions = {
   logout: () => void;
 };
 
-export const createStore = (storeName: string) => {
-  return create<State & Actions>()(
+export const useStore = create<State & Actions>()(
     persist(
       (set, get) => ({
         // ndk state
@@ -242,9 +241,8 @@ export const createStore = (storeName: string) => {
         },
       }),
       {
-        name: storeName || 'ndk-store',
+      name: 'ndk-store',
         partialize: (state) => ({ loginData: state.loginData }),
       }
     )
   );
-};
