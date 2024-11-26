@@ -46,6 +46,14 @@ type Actions = {
 
   removeSubscription: RemoveSubscription;
 
+  addEvent: (subscriptionId: string | undefined, event: NDKEvent) => void;
+
+  addEvents: (subscriptionId: string | undefined, events: NDKEvent[]) => void;
+
+  setEose: (subscriptionId: string | undefined, eose: boolean) => void;
+
+  setHasMore: (subscriptionId: string | undefined, hasMore: boolean) => void;
+
 
   // login actions
   loginWithExtension: LoginWithExtension;
@@ -141,6 +149,52 @@ export const useStore = create<State & Actions>()(
           })
         );
       },
+
+      addEvent: (subscriptionId, event) =>
+        set(
+          produce((state) => {
+            if (!subscriptionId) return;
+
+            state.subscriptions[subscriptionId].events = [
+              ...state.subscriptions[subscriptionId].events,
+              event,
+            ]
+              .filter((e, i, a) => a.findIndex((ee) => ee.id === e.id) === i)
+              .sort((a, b) => a.created_at! - b.created_at!);
+          })
+        ),
+
+      addEvents: (subscriptionId, events) =>
+        set(
+          produce((state) => {
+            if (!subscriptionId) return;
+
+            state.subscriptions[subscriptionId].events = [
+              ...state.subscriptions[subscriptionId].events,
+              ...events,
+            ]
+              .filter((e, i, a) => a.findIndex((ee) => ee.id === e.id) === i)
+              .sort((a, b) => a.created_at! - b.created_at!);
+          })
+        ),
+
+      setEose: (subscriptionId, eose) =>
+        set(
+          produce((state) => {
+            if (!subscriptionId) return;
+
+            state.subscriptions[subscriptionId].eose = eose;
+          })
+        ),
+
+      setHasMore: (subscriptionId, hasMore) =>
+        set(
+          produce((state) => {
+            if (!subscriptionId) return;
+
+            state.subscriptions[subscriptionId].hasMore = hasMore;
+          })
+        ),
 
 
         // ndk actions
