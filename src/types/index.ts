@@ -10,6 +10,27 @@ import {
   NDKSubscriptionOptions,
 } from '@nostr-dev-kit/ndk';
 
+export type Subscriptions = Record<
+  string,
+  {
+    subscription: NDKSubscription;
+    events: NDKEvent[];
+    eose: boolean;
+    hasMore: boolean;
+    listenersCount: number;
+  }
+>;
+
+export type CreateSubscription = (
+  subId: string | undefined,
+  filters: NDKFilter[],
+  opts?: NDKSubscriptionOptions,
+  relayUrls?: string[],
+  autoStart?: boolean
+) => NDKSubscription | null;
+
+export type RemoveSubscription = (subId: string | undefined) => void;
+
 export type InitNdk = (constructorParams?: NDKConstructorParams) => void;
 
 export type SetSigner = (signer: NDKSigner | undefined) => void;
