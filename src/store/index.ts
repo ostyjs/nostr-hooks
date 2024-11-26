@@ -1,9 +1,11 @@
 import NDK, {
   NDKConstructorParams,
+  NDKEvent,
+  NDKFilter,
   NDKNip07Signer,
   NDKNip46Signer,
   NDKPrivateKeySigner,
-  NDKSigner,
+  NDKRelaySet,
 } from '@nostr-dev-kit/ndk';
 import { produce } from 'immer';
 import { create } from 'zustand';
@@ -27,6 +29,8 @@ type State = {
 
   ndk: NDK | undefined;
 
+  subscriptions: Subscriptions;
+
   // login state
   loginData: LoginData;
 };
@@ -36,6 +40,11 @@ type Actions = {
   initNdk: InitNdk;
 
   setSigner: SetSigner;
+
+  // subscription actions
+  createSubscription: CreateSubscription;
+
+  removeSubscription: RemoveSubscription;
 
 
   // login actions
@@ -54,12 +63,85 @@ export const useStore = create<State & Actions>()(
 
         ndk: undefined,
 
+      // subscription state
+      subscriptions: {},
+
         // login state
         loginData: {
           privateKey: undefined,
           loginMethod: undefined,
           nip46Address: undefined,
         },
+
+      // subscription actions
+      createSubscription: (subId, filters, opts, relayUrls, autoStart) => {
+        if (!subId) return null;
+
+        const sub = get().subscriptions[subId];
+        if (sub) {
+          set(
+            produce((state) => {
+              state.subscriptions[subId].listenersCount += 1;
+            })
+          );
+
+          return sub.subscription;
+        }
+
+        const { ndk } = get();
+        if (!ndk) return null;
+
+        const subscription = ndk.subscribe(
+          filters,
+          opts,
+          relayUrls ? NDKRelaySet.fromRelayUrls(relayUrls, ndk) : undefined,
+          autoStart
+        );
+
+        subscription.on('event', (event) => {
+          get().addEvent(subId, event);
+        });
+        subscription.on('eose', () => {
+          get().setEose(subId, true);
+
+          const events = get().subscriptions[subId || 'na']?.events;
+          if (events && events.length > 0) {
+            get().setHasMore(subId, true);
+          }
+        });
+
+        set(
+          produce((state) => {
+            state.subscriptions[subId] = {
+              subscription,
+              events: [],
+              eose: false,
+              hasMore: false,
+              listenersCount: 1,
+            };
+          })
+        );
+
+        return subscription;
+      },
+
+      removeSubscription: (subId) => {
+        if (!subId) return;
+
+        set(
+          produce((state) => {
+            if (!state.subscriptions[subId]) return;
+
+            state.subscriptions[subId].listenersCount -= 1;
+
+            if (state.subscriptions[subId].listenersCount <= 0) {
+              state.subscriptions[subId]?.subscription?.stop();
+              delete state.subscriptions[subId];
+            }
+          })
+        );
+      },
+
 
         // ndk actions
         initNdk: (constructorParams) => {
