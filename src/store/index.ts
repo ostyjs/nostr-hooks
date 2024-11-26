@@ -54,6 +54,7 @@ type Actions = {
 
   setHasMore: (subscriptionId: string | undefined, hasMore: boolean) => void;
 
+  loadMore: (subscriptionId: string | undefined, limit?: number) => void;
 
   // login actions
   loginWithExtension: LoginWithExtension;
@@ -196,6 +197,45 @@ export const useStore = create<State & Actions>()(
           })
         ),
 
+      loadMore: (subscriptionId, limit) => {
+        if (!subscriptionId) return;
+
+        const sub = get().subscriptions[subscriptionId];
+        if (!sub) return;
+
+        if (!sub.hasMore || !sub.eose || !sub.events || !sub.events.length) return;
+
+        const oldestEvent = sub.events[0];
+        if (!oldestEvent) return;
+
+        const ndk = get().ndk;
+        if (!ndk) return;
+
+        const untilTimestamp = oldestEvent.created_at! - 1;
+
+        const loadMoreSub = ndk.subscribe(
+          sub.subscription.filters.map(
+            (filter) =>
+              ({
+                ...filter,
+                limit: limit || filter.limit || 50,
+                until: untilTimestamp,
+              }) as NDKFilter
+          ),
+          { ...sub.subscription.opts, closeOnEose: true },
+          sub.subscription.relaySet
+        );
+
+        let hasEvents = false;
+        loadMoreSub.on('event', (event) => {
+          hasEvents = true;
+          // get().addEvent(subscriptionId, event);
+          sub.subscription.emit('event', event, event.relay, sub.subscription);
+        });
+        loadMoreSub.on('eose', () => {
+          get().setHasMore(subscriptionId, hasEvents);
+        });
+      },
 
         // ndk actions
         initNdk: (constructorParams) => {
