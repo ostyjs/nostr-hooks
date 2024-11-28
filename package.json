@@ -19,6 +19,9 @@
     ".": {
       "import": "./dist/index.js"
     },
+    "./nip29": {
+      "import": "./dist/nip29/index.js"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
