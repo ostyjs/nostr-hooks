@@ -4,6 +4,16 @@ import { useCallback, useMemo } from 'react';
 import { useStore } from '../../store';
 import { useNdk } from '../use-ndk';
 
+/**
+ * Custom hook to manage NDK subscriptions.
+ *
+ * @param subId - The subscription ID. This is used to identify the subscription internally.
+ * @returns An object containing the subscription details and methods to manage the subscription.
+ * @property createSubscription - Function to create a new subscription.
+ * @property removeSubscription - Function to remove the subscription.
+ * @property loadMore - Function to load more events for an existing subscription.
+ * @property isLoading - Boolean indicating if the subscription is currently loading.
+ */
 export const useSubscription = (subId: string | undefined) => {
   const { ndk } = useNdk();
 

@@ -12,10 +12,13 @@ type ProfileParams = {
 };
 
 /**
- * Custom hook for fetching a user profile.
+ * Custom hook to fetch and manage a user profile.
  *
- * @param profileParams - Optional parameters for fetching the user profile.
- * @returns An object containing the user profile or undefined.
+ * @param [profileParams] - Optional parameters to fetch the profile.
+ * @returns An object containing the user profile.
+ *
+ * @example
+ * const { profile } = useProfile({ nip05: 'example@domain.com' });
  */
 export const useProfile = (profileParams?: ProfileParams) => {
   const [profile, setProfile] = useState<NDKUserProfile | undefined>(undefined);
