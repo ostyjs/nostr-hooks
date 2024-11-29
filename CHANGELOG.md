@@ -1,5 +1,22 @@
 # Nostr-Hooks
 
+## 4.0.0
+
+This version is a major update that includes a lot of breaking changes and improvements.
+Please make sure to update your codebase according to the following changes.
+
+### Breaking Changes
+
+We have reverted the `createStore` function. It is no longer necessary to create multiple Zustand stores for each NDK instance. Instead, a single Zustand store will be used for a single NDK instance, simplifying the codebase and making it easier to manage.
+
+The `useSubscribe` hook has been replaced with the `useSubscription` hook, which is more flexible and user-friendly. Detailed information about this change can be found in the README. Unlike `useSubscribe`, you no longer need to memoize input parameters. The `useSubscription` hook provides a `createSubscription` function that can be called with any parameters. It is recommended to call `createSubscription` within a `useEffect` hook and pass the parameters as arguments, and to call `removeSubscription` within the `useEffect` cleanup function. Examples are available in the README.
+
+The `useNdk` and `useLogin` hooks have been reintroduced. The `useNdk` hook can be used to initialize and connect to the NDK instance, while the `useLogin` hook can be used for logging in with various methods. More details about these changes are available in the README.
+
+### NIP-29 is here!
+
+NIP-29 has been integrated in this release! This update introduces several new hooks and methods for interacting with NIP-29 Relay-based groups. We've implemented an internal store following best practices for state management in React, offering a comprehensive set of hooks and methods that are fast, efficient, and user-friendly. More details about these new hooks and methods can be found in the README.
+
 ## 3.0.0
 
 This version is a major update that includes a lot of breaking changes and improvements.

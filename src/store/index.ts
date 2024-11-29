@@ -1,12 +1,27 @@
 import NDK, {
   NDKConstructorParams,
+  NDKEvent,
+  NDKFilter,
   NDKNip07Signer,
   NDKNip46Signer,
   NDKPrivateKeySigner,
-  NDKSigner,
+  NDKRelaySet,
 } from '@nostr-dev-kit/ndk';
+import { produce } from 'immer';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+
+import {
+  CreateSubscription,
+  InitNdk,
+  LoginData,
+  LoginWithExtension,
+  LoginWithPrivateKey,
+  LoginWithRemoteSigner,
+  RemoveSubscription,
+  SetSigner,
+  Subscriptions,
+} from '../types';
 
 type State = {
   // ndk state
@@ -14,237 +29,416 @@ type State = {
 
   ndk: NDK | undefined;
 
+  subscriptions: Subscriptions;
+
   // login state
-  loginData: {
-    privateKey: string | undefined;
-    loginMethod: 'Extension' | 'Remote' | 'PrivateKey' | undefined;
-    nip46Address: string | undefined;
-  };
+  loginData: LoginData;
 };
 
 type Actions = {
   // ndk actions
-  initNdk: (constructorParams?: NDKConstructorParams) => void;
+  initNdk: InitNdk;
 
-  setSigner: (signer: NDKSigner | undefined) => void;
+  setSigner: SetSigner;
+
+  // subscription actions
+  createSubscription: CreateSubscription;
+
+  removeSubscription: RemoveSubscription;
+
+  addEvent: (subscriptionId: string | undefined, event: NDKEvent) => void;
+
+  addEvents: (subscriptionId: string | undefined, events: NDKEvent[]) => void;
+
+  setEose: (subscriptionId: string | undefined, eose: boolean) => void;
+
+  setHasMore: (subscriptionId: string | undefined, hasMore: boolean) => void;
+
+  loadMore: (subscriptionId: string | undefined, limit?: number) => void;
 
   // login actions
-  loginWithExtension: (options?: {
-    onError?: (err: any) => void;
-    onSuccess?: (signer: NDKNip07Signer) => void;
-  }) => void;
-  loginWithRemoteSigner: (options?: {
-    nip46Address?: string | undefined;
-    onError?: (err: unknown) => void;
-    onSuccess?: (signer: NDKNip46Signer) => void;
-  }) => void;
-  loginWithPrivateKey: (options?: {
-    privateKey?: string | undefined;
-    onError?: (err: unknown) => void;
-    onSuccess?: (signer: NDKPrivateKeySigner) => void;
-  }) => void;
+  loginWithExtension: LoginWithExtension;
+  loginWithRemoteSigner: LoginWithRemoteSigner;
+  loginWithPrivateKey: LoginWithPrivateKey;
   loginFromLocalStorage: () => void;
   logout: () => void;
 };
 
-export const createStore = (storeName: string) => {
-  return create<State & Actions>()(
-    persist(
-      (set, get) => ({
-        // ndk state
-        constructorParams: undefined,
+export const useStore = create<State & Actions>()(
+  persist(
+    (set, get) => ({
+      // ndk state
+      constructorParams: undefined,
 
-        ndk: undefined,
+      ndk: undefined,
 
-        // login state
-        loginData: {
-          privateKey: undefined,
-          loginMethod: undefined,
-          nip46Address: undefined,
-        },
+      // subscription state
+      subscriptions: {},
 
-        // ndk actions
-        initNdk: (constructorParams) => {
-          const ndk = new NDK(constructorParams);
+      // login state
+      loginData: {
+        privateKey: undefined,
+        loginMethod: undefined,
+        nip46Address: undefined,
+      },
 
-          set({ constructorParams, ndk });
-        },
+      // subscription actions
+      createSubscription: (subId, filters, opts, relayUrls, autoStart) => {
+        if (!subId) return null;
 
-        setSigner: (signer) => {
-          const newConstructorParams = { ...get().constructorParams };
-
-          if (!signer) {
-            delete newConstructorParams.signer;
-          } else {
-            newConstructorParams.signer = signer;
-          }
-
-          get().initNdk(newConstructorParams);
-        },
-
-        // login actions
-        loginWithExtension: ({
-          onError,
-          onSuccess,
-        }: { onError?: (err: any) => void; onSuccess?: (signer: NDKNip07Signer) => void } = {}) => {
-          const signer = new NDKNip07Signer();
-
-          signer
-            .blockUntilReady()
-            .then(() => {
-              set({
-                loginData: {
-                  loginMethod: 'Extension',
-                  nip46Address: undefined,
-                  privateKey: undefined,
-                },
-              });
-
-              get().setSigner(signer);
-
-              onSuccess?.(signer);
+        const sub = get().subscriptions[subId];
+        if (sub) {
+          set(
+            produce((state) => {
+              state.subscriptions[subId].listenersCount += 1;
             })
-            .catch((err) => {
-              set({
-                loginData: {
-                  privateKey: undefined,
-                  loginMethod: undefined,
-                  nip46Address: undefined,
-                },
-              });
+          );
 
-              onError?.(err);
-            });
-        },
+          return sub.subscription;
+        }
 
-        loginWithRemoteSigner: ({
-          nip46Address,
-          onError,
-          onSuccess,
-        }: {
-          nip46Address?: string | undefined;
-          onError?: (err: unknown) => void;
-          onSuccess?: (signer: NDKNip46Signer) => void;
-        } = {}) => {
-          const { ndk } = get();
-          if (!ndk) {
-            onError?.('NDK instance is not initialized');
+        const { ndk } = get();
+        if (!ndk) return null;
 
-            return;
+        const subscription = ndk.subscribe(
+          filters,
+          opts,
+          relayUrls ? NDKRelaySet.fromRelayUrls(relayUrls, ndk) : undefined,
+          autoStart
+        );
+
+        subscription.on('event', (event) => {
+          get().addEvent(subId, event);
+        });
+        subscription.on('eose', () => {
+          get().setEose(subId, true);
+
+          const events = get().subscriptions[subId || 'na']?.events;
+          if (events && events.length > 0) {
+            get().setHasMore(subId, true);
           }
+        });
 
-          const _addr = !nip46Address ? get().loginData.nip46Address : nip46Address;
+        set(
+          produce((state) => {
+            state.subscriptions[subId] = {
+              subscription,
+              events: [],
+              eose: false,
+              hasMore: false,
+              listenersCount: 1,
+            };
+          })
+        );
 
-          if (!_addr) {
-            set({
-              loginData: { privateKey: undefined, loginMethod: undefined, nip46Address: undefined },
-            });
-            onError?.('NIP46 address is empty');
+        return subscription;
+      },
 
-            return;
-          }
+      removeSubscription: (subId) => {
+        if (!subId) return;
 
-          const signer = new NDKNip46Signer(ndk, _addr);
+        set(
+          produce((state) => {
+            if (!state.subscriptions[subId]) return;
 
-          signer.on('authUrl', (url) => {
-            window.open(url, 'auth', 'width=600,height=600');
+            state.subscriptions[subId].listenersCount -= 1;
+
+            if (state.subscriptions[subId].listenersCount <= 0) {
+              state.subscriptions[subId]?.subscription?.stop();
+              delete state.subscriptions[subId];
+            }
+          })
+        );
+      },
+
+      addEvent: (subscriptionId, event) =>
+        set(
+          produce((state) => {
+            if (!subscriptionId) return;
+
+            state.subscriptions[subscriptionId].events = [
+              ...state.subscriptions[subscriptionId].events,
+              event,
+            ]
+              .filter((e, i, a) => a.findIndex((ee) => ee.id === e.id) === i)
+              .sort((a, b) => a.created_at! - b.created_at!);
+          })
+        ),
+
+      addEvents: (subscriptionId, events) =>
+        set(
+          produce((state) => {
+            if (!subscriptionId) return;
+
+            state.subscriptions[subscriptionId].events = [
+              ...state.subscriptions[subscriptionId].events,
+              ...events,
+            ]
+              .filter((e, i, a) => a.findIndex((ee) => ee.id === e.id) === i)
+              .sort((a, b) => a.created_at! - b.created_at!);
+          })
+        ),
+
+      setEose: (subscriptionId, eose) =>
+        set(
+          produce((state) => {
+            if (!subscriptionId) return;
+
+            state.subscriptions[subscriptionId].eose = eose;
+          })
+        ),
+
+      setHasMore: (subscriptionId, hasMore) =>
+        set(
+          produce((state) => {
+            if (!subscriptionId) return;
+
+            state.subscriptions[subscriptionId].hasMore = hasMore;
+          })
+        ),
+
+      loadMore: (subscriptionId, limit) => {
+        if (!subscriptionId) return;
+
+        const sub = get().subscriptions[subscriptionId];
+        if (!sub) return;
+
+        if (!sub.hasMore || !sub.eose || !sub.events || !sub.events.length) return;
+
+        const oldestEvent = sub.events[0];
+        if (!oldestEvent) return;
+
+        const ndk = get().ndk;
+        if (!ndk) return;
+
+        const untilTimestamp = oldestEvent.created_at! - 1;
+
+        const loadMoreSub = ndk.subscribe(
+          sub.subscription.filters.map(
+            (filter) =>
+              ({
+                ...filter,
+                limit: limit || filter.limit || 50,
+                until: untilTimestamp,
+              }) as NDKFilter
+          ),
+          { ...sub.subscription.opts, closeOnEose: true },
+          sub.subscription.relaySet
+        );
+
+        let hasEvents = false;
+        loadMoreSub.on('event', (event) => {
+          hasEvents = true;
+          // get().addEvent(subscriptionId, event);
+          sub.subscription.emit('event', event, event.relay, sub.subscription);
+        });
+        loadMoreSub.on('eose', () => {
+          get().setHasMore(subscriptionId, hasEvents);
+        });
+      },
+
+      // ndk actions
+      initNdk: (constructorParams) => {
+        if (!constructorParams) return;
+
+        const ndk = new NDK(constructorParams);
+
+        set(
+          produce((state) => {
+            state.constructorParams = constructorParams;
+            state.ndk = ndk;
+          })
+        );
+      },
+
+      setSigner: (signer) => {
+        const newConstructorParams = { ...get().constructorParams };
+
+        set(
+          produce((state) => {
+            if (signer) {
+              newConstructorParams.signer = signer;
+            } else {
+              delete newConstructorParams.signer;
+            }
+
+            const ndk = new NDK(newConstructorParams);
+
+            state.ndk = ndk;
+          })
+        );
+      },
+
+      // login actions
+      loginWithExtension: ({
+        onError,
+        onSuccess,
+      }: {
+        onError?: (err: any) => void;
+        onSuccess?: (signer: NDKNip07Signer) => void;
+      } = {}) => {
+        const signer = new NDKNip07Signer();
+
+        signer
+          .blockUntilReady()
+          .then(() => {
+            set(
+              produce((state) => {
+                state.loginData.privateKey = undefined;
+                state.loginData.loginMethod = 'Extension';
+                state.loginData.nip46Address = undefined;
+              })
+            );
+
+            get().setSigner(signer);
+
+            onSuccess?.(signer);
+          })
+          .catch((err) => {
+            set(
+              produce((state) => {
+                state.loginData.privateKey = undefined;
+                state.loginData.loginMethod = undefined;
+                state.loginData.nip46Address = undefined;
+              })
+            );
+
+            onError?.(err);
           });
+      },
 
-          signer
-            .blockUntilReady()
-            .then(() => {
-              set({
-                loginData: {
-                  loginMethod: 'Remote',
-                  nip46Address: _addr,
-                  privateKey: undefined,
-                },
-              });
+      loginWithRemoteSigner: ({
+        nip46Address,
+        onError,
+        onSuccess,
+      }: {
+        nip46Address?: string | undefined;
+        onError?: (err: unknown) => void;
+        onSuccess?: (signer: NDKNip46Signer) => void;
+      } = {}) => {
+        const { ndk } = get();
+        if (!ndk) {
+          onError?.('NDK instance is not initialized');
 
-              get().setSigner(signer);
+          return;
+        }
 
-              onSuccess?.(signer);
+        const _addr = !nip46Address ? get().loginData.nip46Address : nip46Address;
+
+        if (!_addr) {
+          set(
+            produce((state) => {
+              state.loginData.privateKey = undefined;
+              state.loginData.loginMethod = undefined;
+              state.loginData.nip46Address = undefined;
             })
-            .catch((err) => {
-              set({
-                loginData: {
-                  privateKey: undefined,
-                  loginMethod: undefined,
-                  nip46Address: undefined,
-                },
-              });
+          );
 
-              onError?.(err);
-            });
-        },
+          onError?.('NIP46 address is empty');
 
-        loginWithPrivateKey: ({
-          privateKey,
-          onError,
-          onSuccess,
-        }: {
-          privateKey?: string | undefined;
-          onError?: (err: unknown) => void;
-          onSuccess?: (signer: NDKPrivateKeySigner) => void;
-        } = {}) => {
-          const signer = new NDKPrivateKeySigner(privateKey);
+          return;
+        }
 
-          signer
-            .blockUntilReady()
-            .then(() => {
-              set({
-                loginData: {
-                  loginMethod: 'PrivateKey',
-                  nip46Address: undefined,
-                  privateKey,
-                },
-              });
+        const signer = new NDKNip46Signer(ndk, _addr);
 
-              get().setSigner(signer);
+        signer.on('authUrl', (url) => {
+          window.open(url, 'auth', 'width=600,height=600');
+        });
 
-              onSuccess?.(signer);
-            })
-            .catch((err) => {
-              set({
-                loginData: {
-                  privateKey: undefined,
-                  loginMethod: undefined,
-                  nip46Address: undefined,
-                },
-              });
+        signer
+          .blockUntilReady()
+          .then(() => {
+            set(
+              produce((state) => {
+                state.loginData.privateKey = undefined;
+                state.loginData.loginMethod = 'Remote';
+                state.loginData.nip46Address = _addr;
+              })
+            );
 
-              onError?.(err);
-            });
-        },
+            get().setSigner(signer);
 
-        loginFromLocalStorage: () => {
-          const { privateKey, loginMethod, nip46Address } = get().loginData;
+            onSuccess?.(signer);
+          })
+          .catch((err) => {
+            set(
+              produce((state) => {
+                state.loginData.privateKey = undefined;
+                state.loginData.loginMethod = undefined;
+                state.loginData.nip46Address = undefined;
+              })
+            );
 
-          if (loginMethod === 'PrivateKey' && privateKey) {
-            get().loginWithPrivateKey({ privateKey });
-          } else if (loginMethod === 'Remote' && nip46Address) {
-            get().loginWithRemoteSigner({ nip46Address });
-          } else if (loginMethod === 'Extension') {
-            get().loginWithExtension();
-          }
-        },
-
-        logout: () => {
-          set({
-            loginData: {
-              privateKey: undefined,
-              loginMethod: undefined,
-              nip46Address: undefined,
-            },
+            onError?.(err);
           });
+      },
 
-          get().setSigner(undefined);
-        },
-      }),
-      {
-        name: storeName || 'ndk-store',
-        partialize: (state) => ({ loginData: state.loginData }),
-      }
-    )
-  );
-};
+      loginWithPrivateKey: ({
+        privateKey,
+        onError,
+        onSuccess,
+      }: {
+        privateKey?: string | undefined;
+        onError?: (err: unknown) => void;
+        onSuccess?: (signer: NDKPrivateKeySigner) => void;
+      } = {}) => {
+        const signer = new NDKPrivateKeySigner(privateKey);
+
+        signer
+          .blockUntilReady()
+          .then(() => {
+            set(
+              produce((state) => {
+                state.loginData.privateKey = privateKey;
+                state.loginData.loginMethod = 'PrivateKey';
+                state.loginData.nip46Address = undefined;
+              })
+            );
+
+            get().setSigner(signer);
+
+            onSuccess?.(signer);
+          })
+          .catch((err) => {
+            set(
+              produce((state) => {
+                state.loginData.privateKey = undefined;
+                state.loginData.loginMethod = undefined;
+                state.loginData.nip46Address = undefined;
+              })
+            );
+
+            onError?.(err);
+          });
+      },
+
+      loginFromLocalStorage: () => {
+        const { privateKey, loginMethod, nip46Address } = get().loginData;
+
+        if (loginMethod === 'PrivateKey' && privateKey) {
+          get().loginWithPrivateKey({ privateKey });
+        } else if (loginMethod === 'Remote' && nip46Address) {
+          get().loginWithRemoteSigner({ nip46Address });
+        } else if (loginMethod === 'Extension') {
+          get().loginWithExtension();
+        }
+      },
+
+      logout: () => {
+        set(
+          produce((state) => {
+            state.loginData.privateKey = undefined;
+            state.loginData.loginMethod = undefined;
+            state.loginData.nip46Address = undefined;
+          })
+        );
+
+        get().setSigner(undefined);
+      },
+    }),
+    {
+      name: 'ndk-store',
+      partialize: (state) => ({ loginData: state.loginData }),
+    }
+  )
+);

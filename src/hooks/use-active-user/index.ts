@@ -1,5 +1,7 @@
-import NDK, { NDKUser } from '@nostr-dev-kit/ndk';
+import { NDKUser } from '@nostr-dev-kit/ndk';
 import { useEffect, useState } from 'react';
+
+import { useNdk } from '../use-ndk';
 
 /**
  * Custom hook that retrieves the active user using the NDK instance and the signer.
@@ -7,8 +9,10 @@ import { useEffect, useState } from 'react';
  * @param fetchProfile - Optional boolean indicating whether to fetch profile for the active user. Default is false.
  * @returns An object containing the active user or undefined if there is no active user.
  */
-export const useActiveUser = (ndk: NDK | undefined, fetchProfile?: boolean) => {
+export const useActiveUser = (fetchProfile?: boolean) => {
   const [activeUser, setActiveUser] = useState<NDKUser | undefined>(undefined);
+
+  const { ndk } = useNdk();
 
   useEffect(() => {
     if (!ndk) {

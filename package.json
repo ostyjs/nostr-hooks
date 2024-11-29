@@ -1,6 +1,6 @@
 {
   "name": "nostr-hooks",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "React hooks for developing Nostr clients",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -18,6 +18,9 @@
   "exports": {
     ".": {
       "import": "./dist/index.js"
+    },
+    "./nip29": {
+      "import": "./dist/nip29/index.js"
     },
     "./package.json": "./package.json"
   },
@@ -89,8 +92,9 @@
     "@nostr-dev-kit/ndk": "^2.10.6",
     "@nostr-dev-kit/ndk-cache-dexie": "^2.5.7",
     "@uidotdev/usehooks": "^2.4.1",
+    "immer": "^10.1.1",
     "nostr-tools": "^2.10.3",
     "superjson": "^2.2.1",
-    "zustand": "^5.0.0"
+    "zustand": "^5.0.1"
   }
 }

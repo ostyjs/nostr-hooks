@@ -1,2 +1,2 @@
 export * from './hooks';
-export * from './store';
+export * as nip29 from './nip29';
