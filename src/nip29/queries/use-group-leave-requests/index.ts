@@ -22,7 +22,7 @@ export const useGroupLeaveRequests = (
   relay: string | undefined,
   groupId: string | undefined,
   filter?: {
-    byAuthor?: {
+    byPubkey?: {
       pubkey: string | undefined;
       waitForPubkey: true;
     };
@@ -42,17 +42,17 @@ export const useGroupLeaveRequests = (
     subId && groupId ? state.groups[subId]?.[groupId]?.leaveRequests : undefined
   );
 
-  const { events, hasMore, createSubscription, removeSubscription, isLoading, loadMore } =
+  const { events, hasMore, isLoading, createSubscription, loadMore, removeSubscription } =
     useSubscription(subId);
 
   useEffect(() => {
-    if (!relay || !groupId) return;
-    if (filter?.byAuthor?.waitForPubkey && !filter.byAuthor.pubkey) return;
+    if (!relay || !groupId || !subId) return;
+    if (filter?.byPubkey?.waitForPubkey && !filter.byPubkey.pubkey) return;
     if (filter?.byId?.waitForId && !filter.byId.id) return;
 
     let f: NDKFilter = { kinds: [9022 as NDKKind], limit: filter?.limit || 10 };
     if (groupId) f['#h'] = [groupId];
-    if (filter?.byAuthor?.pubkey) f.authors = [filter?.byAuthor?.pubkey];
+    if (filter?.byPubkey?.pubkey) f.authors = [filter?.byPubkey?.pubkey];
     if (filter?.byId?.id) f.ids = [filter?.byId?.id];
     if (filter?.since) f.since = filter.since;
     if (filter?.until) f.until = filter.until;
@@ -67,12 +67,12 @@ export const useGroupLeaveRequests = (
     subId,
     relay,
     groupId,
-    filter?.byAuthor?.pubkey,
+    filter?.byPubkey?.pubkey,
+    filter?.byPubkey?.waitForPubkey,
     filter?.byId?.id,
+    filter?.byId?.waitForId,
     filter?.since,
     filter?.until,
-    filter?.byAuthor?.waitForPubkey,
-    filter?.byId?.waitForId,
     createSubscription,
     removeSubscription,
   ]);

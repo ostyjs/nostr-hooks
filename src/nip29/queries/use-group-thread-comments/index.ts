@@ -23,7 +23,7 @@ export const useGroupThreadComments = (
   relay: string | undefined,
   groupId: string | undefined,
   filter?: {
-    byAuthor?: {
+    byPubkey?: {
       pubkey: string | undefined;
       waitForPubkey: true;
     };
@@ -32,8 +32,8 @@ export const useGroupThreadComments = (
       waitForId: true;
     };
     byParentId?: {
-      id: string | undefined;
-      waitForId: true;
+      parentId: string | undefined;
+      waitForParentId: true;
     };
     since?: number | undefined;
     until?: number | undefined;
@@ -47,19 +47,20 @@ export const useGroupThreadComments = (
     subId && groupId ? state.groups[subId]?.[groupId]?.threadComments : undefined
   );
 
-  const { events, hasMore, createSubscription, removeSubscription, isLoading, loadMore } =
+  const { events, hasMore, isLoading, createSubscription, loadMore, removeSubscription } =
     useSubscription(subId);
 
   useEffect(() => {
-    if (!relay || !groupId) return;
-    if (filter?.byAuthor?.waitForPubkey && !filter.byAuthor.pubkey) return;
+    if (!relay || !groupId || !subId) return;
+    if (filter?.byPubkey?.waitForPubkey && !filter.byPubkey.pubkey) return;
     if (filter?.byId?.waitForId && !filter.byId.id) return;
+    if (filter?.byParentId?.waitForParentId && !filter.byParentId.parentId) return;
 
     let f: NDKFilter = { kinds: [1111 as NDKKind], '#K': ['11'], limit: filter?.limit || 10 };
     if (groupId) f['#h'] = [groupId];
-    if (filter?.byAuthor?.pubkey) f.authors = [filter?.byAuthor?.pubkey];
+    if (filter?.byPubkey?.pubkey) f.authors = [filter?.byPubkey?.pubkey];
     if (filter?.byId?.id) f.ids = [filter?.byId?.id];
-    if (filter?.byParentId?.id) f['#E'] = [filter?.byParentId?.id];
+    if (filter?.byParentId?.parentId) f['#E'] = [filter?.byParentId?.parentId];
     if (filter?.since) f.since = filter.since;
     if (filter?.until) f.until = filter.until;
 
@@ -73,12 +74,14 @@ export const useGroupThreadComments = (
     subId,
     relay,
     groupId,
-    filter?.byAuthor?.pubkey,
+    filter?.byPubkey?.pubkey,
+    filter?.byPubkey?.waitForPubkey,
     filter?.byId?.id,
+    filter?.byId?.waitForId,
+    filter?.byParentId?.parentId,
+    filter?.byParentId?.waitForParentId,
     filter?.since,
     filter?.until,
-    filter?.byAuthor?.waitForPubkey,
-    filter?.byId?.waitForId,
     createSubscription,
     removeSubscription,
   ]);

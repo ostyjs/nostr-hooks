@@ -28,17 +28,17 @@ export const useSubscription = (subId: string | undefined) => {
       opts?: NDKSubscriptionOptions,
       relayUrls?: string[],
       autoStart?: boolean
-    ) => (ndk ? _createSubscription(subId, filters, opts, relayUrls, autoStart) : null),
+    ) => (ndk && subId ? _createSubscription(subId, filters, opts, relayUrls, autoStart) : null),
     [ndk, _createSubscription, subId]
   );
 
   const removeSubscription = useCallback(
-    () => ndk && _removeSubscription(subId),
-    [ndk, _removeSubscription, subId]
+    () => _removeSubscription(subId),
+    [_removeSubscription, subId]
   );
 
   const loadMore = useCallback(
-    (limit?: number) => ndk && _loadMore(subId, limit),
+    (limit?: number) => subId && ndk && _loadMore(subId, limit),
     [ndk, _loadMore, subId]
   );
 

@@ -49,11 +49,11 @@ export const useAllGroupsMetadataRecords = (relay: string | undefined) => {
     [allGroups]
   );
 
-  const { events, createSubscription, removeSubscription, isLoading, loadMore, hasMore } =
+  const { events, isLoading, hasMore, createSubscription, loadMore, removeSubscription } =
     useSubscription(subId);
 
   useEffect(() => {
-    if (!relay) return;
+    if (!relay || !subId) return;
 
     const filters: NDKFilter[] = [{ kinds: [39000], limit: 100 }];
 

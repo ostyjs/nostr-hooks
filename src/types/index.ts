@@ -22,7 +22,7 @@ export type Subscriptions = Record<
 >;
 
 export type CreateSubscription = (
-  subId: string | undefined,
+  subId: string,
   filters: NDKFilter[],
   opts?: NDKSubscriptionOptions,
   relayUrls?: string[],

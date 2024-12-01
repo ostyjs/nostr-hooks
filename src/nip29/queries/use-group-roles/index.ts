@@ -30,7 +30,7 @@ export const useGroupRoles = (relay: string | undefined, groupId: string | undef
   const { events, eose, createSubscription, removeSubscription } = useSubscription(subId);
 
   useEffect(() => {
-    if (!relay || !groupId) return;
+    if (!relay || !groupId || !subId) return;
 
     const filters: NDKFilter[] = [{ kinds: [39003 as NDKKind], '#d': [groupId], limit: 1 }];
 
