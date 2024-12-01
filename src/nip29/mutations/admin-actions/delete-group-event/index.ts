@@ -1,21 +1,23 @@
-import { NDKEvent } from '@nostr-dev-kit/ndk';
+import { NDKEvent, NDKRelaySet } from '@nostr-dev-kit/ndk';
 
-import { useNdk } from '../../../../hooks';
+import { useStore } from '../../../../store';
 
 export const deleteGroupEvent = ({
+  relay,
   groupId,
   eventId,
   reason,
   onSuccess,
   onError,
 }: {
+  relay: string;
   groupId: string;
   eventId: string;
   reason?: string;
   onSuccess?: () => void;
   onError?: () => void;
 }) => {
-  const { ndk } = useNdk();
+  const ndk = useStore.getState().ndk;
   if (!ndk) return;
 
   if (!groupId || !eventId) return;
@@ -28,7 +30,7 @@ export const deleteGroupEvent = ({
     ['e', eventId],
   ];
 
-  event.publish().then(
+  event.publish(NDKRelaySet.fromRelayUrls([relay], ndk)).then(
     (r) => {
       if (r.size > 0) {
         onSuccess?.();

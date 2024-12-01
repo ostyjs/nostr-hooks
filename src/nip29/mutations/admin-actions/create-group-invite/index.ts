@@ -1,21 +1,23 @@
-import { NDKEvent } from '@nostr-dev-kit/ndk';
+import { NDKEvent, NDKRelaySet } from '@nostr-dev-kit/ndk';
 
-import { useNdk } from '../../../../hooks';
+import { useStore } from '../../../../store';
 
 export const createGroupInvite = ({
+  relay,
   groupId,
   code,
   reason,
   onSuccess,
   onError,
 }: {
+  relay: string;
   groupId: string;
   code: string;
   reason?: string;
   onSuccess?: () => void;
   onError?: () => void;
 }) => {
-  const { ndk } = useNdk();
+  const ndk = useStore.getState().ndk;
   if (!ndk) return;
 
   if (!groupId) return;
@@ -25,7 +27,7 @@ export const createGroupInvite = ({
   event.content = reason || '';
   event.tags = [['h', groupId, code]];
 
-  event.publish().then(
+  event.publish(NDKRelaySet.fromRelayUrls([relay], ndk)).then(
     (r) => {
       if (r.size > 0) {
         onSuccess?.();
