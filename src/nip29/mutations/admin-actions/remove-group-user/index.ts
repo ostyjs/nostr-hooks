@@ -1,21 +1,23 @@
-import { NDKEvent } from '@nostr-dev-kit/ndk';
+import { NDKEvent, NDKRelaySet } from '@nostr-dev-kit/ndk';
 
-import { useNdk } from '../../../../hooks';
+import { useStore } from '../../../../store';
 
 export const removeGroupUser = ({
+  relay,
   groupId,
   pubkey,
   onError,
   onSuccess,
   reason,
 }: {
+  relay: string;
   groupId: string;
   pubkey: string;
   reason?: string;
   onSuccess?: () => void;
   onError?: () => void;
 }) => {
-  const { ndk } = useNdk();
+  const ndk = useStore.getState().ndk;
   if (!ndk) return;
 
   if (!groupId || !pubkey) return;
@@ -28,7 +30,7 @@ export const removeGroupUser = ({
     ['p', pubkey],
   ];
 
-  event.publish().then(
+  event.publish(NDKRelaySet.fromRelayUrls([relay], ndk)).then(
     (r) => {
       if (r.size > 0) {
         onSuccess?.();
