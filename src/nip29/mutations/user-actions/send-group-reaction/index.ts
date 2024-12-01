@@ -22,7 +22,7 @@ export const sendGroupReaction = ({
   if (!groupId) return;
 
   const event = new NDKEvent(ndk);
-  event.kind = 9;
+  event.kind = 7;
   event.content = reaction.content;
   event.tags = [['h', groupId]];
   reaction.targetId && event.tags.push(['e', reaction.targetId]);
