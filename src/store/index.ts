@@ -46,15 +46,15 @@ type Actions = {
 
   removeSubscription: RemoveSubscription;
 
-  addEvent: (subscriptionId: string | undefined, event: NDKEvent) => void;
+  addEvent: (subId: string, event: NDKEvent) => void;
 
-  addEvents: (subscriptionId: string | undefined, events: NDKEvent[]) => void;
+  addEvents: (subId: string, events: NDKEvent[]) => void;
 
-  setEose: (subscriptionId: string | undefined, eose: boolean) => void;
+  setEose: (subId: string, eose: boolean) => void;
 
-  setHasMore: (subscriptionId: string | undefined, hasMore: boolean) => void;
+  setHasMore: (subId: string, hasMore: boolean) => void;
 
-  loadMore: (subscriptionId: string | undefined, limit?: number) => void;
+  loadMore: (subId: string, limit?: number) => void;
 
   // login actions
   loginWithExtension: LoginWithExtension;
@@ -151,56 +151,50 @@ export const useStore = create<State & Actions>()(
         );
       },
 
-      addEvent: (subscriptionId, event) =>
+      addEvent: (subId, event) =>
         set(
           produce((state) => {
-            if (!subscriptionId) return;
+            if (!subId) return;
 
-            state.subscriptions[subscriptionId].events = [
-              ...state.subscriptions[subscriptionId].events,
-              event,
-            ]
+            state.subscriptions[subId].events = [...state.subscriptions[subId].events, event]
               .filter((e, i, a) => a.findIndex((ee) => ee.id === e.id) === i)
               .sort((a, b) => a.created_at! - b.created_at!);
           })
         ),
 
-      addEvents: (subscriptionId, events) =>
+      addEvents: (subId, events) =>
         set(
           produce((state) => {
-            if (!subscriptionId) return;
+            if (!subId) return;
 
-            state.subscriptions[subscriptionId].events = [
-              ...state.subscriptions[subscriptionId].events,
-              ...events,
-            ]
+            state.subscriptions[subId].events = [...state.subscriptions[subId].events, ...events]
               .filter((e, i, a) => a.findIndex((ee) => ee.id === e.id) === i)
               .sort((a, b) => a.created_at! - b.created_at!);
           })
         ),
 
-      setEose: (subscriptionId, eose) =>
+      setEose: (subId, eose) =>
         set(
           produce((state) => {
-            if (!subscriptionId) return;
+            if (!subId) return;
 
-            state.subscriptions[subscriptionId].eose = eose;
+            state.subscriptions[subId].eose = eose;
           })
         ),
 
-      setHasMore: (subscriptionId, hasMore) =>
+      setHasMore: (subId, hasMore) =>
         set(
           produce((state) => {
-            if (!subscriptionId) return;
+            if (!subId) return;
 
-            state.subscriptions[subscriptionId].hasMore = hasMore;
+            state.subscriptions[subId].hasMore = hasMore;
           })
         ),
 
-      loadMore: (subscriptionId, limit) => {
-        if (!subscriptionId) return;
+      loadMore: (subId, limit) => {
+        if (!subId) return;
 
-        const sub = get().subscriptions[subscriptionId];
+        const sub = get().subscriptions[subId];
         if (!sub) return;
 
         if (!sub.hasMore || !sub.eose || !sub.events || !sub.events.length) return;
@@ -229,11 +223,10 @@ export const useStore = create<State & Actions>()(
         let hasEvents = false;
         loadMoreSub.on('event', (event) => {
           hasEvents = true;
-          // get().addEvent(subscriptionId, event);
           sub.subscription.emit('event', event, event.relay, sub.subscription);
         });
         loadMoreSub.on('eose', () => {
-          get().setHasMore(subscriptionId, hasEvents);
+          get().setHasMore(subId, hasEvents);
         });
       },
 
