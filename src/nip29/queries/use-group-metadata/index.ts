@@ -35,10 +35,10 @@ export const useGroupMetadata = (relay: string | undefined, groupId: string | un
     subId && groupId ? state.groups[subId]?.[groupId]?.metadata : undefined
   );
 
-  const { events, createSubscription, removeSubscription, isLoading } = useSubscription(subId);
+  const { events, isLoading, createSubscription, removeSubscription } = useSubscription(subId);
 
   useEffect(() => {
-    if (!relay || !groupId) return;
+    if (!relay || !groupId || !subId) return;
 
     const filters: NDKFilter[] = [{ kinds: [39000], '#d': [groupId], limit: 1 }];
 

@@ -26,10 +26,10 @@ export const useGroupAdmins = (relay: string | undefined, groupId: string | unde
     subId && groupId ? state.groups[subId]?.[groupId]?.admins : undefined
   );
 
-  const { events, createSubscription, removeSubscription, isLoading } = useSubscription(subId);
+  const { events, isLoading, createSubscription, removeSubscription } = useSubscription(subId);
 
   useEffect(() => {
-    if (!relay || !groupId) return;
+    if (!relay || !groupId || !subId) return;
 
     const filters: NDKFilter[] = [{ kinds: [39001], '#d': [groupId], limit: 1 }];
 
