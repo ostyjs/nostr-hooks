@@ -1,20 +1,22 @@
-import { NDKEvent } from '@nostr-dev-kit/ndk';
+import { NDKEvent, NDKRelaySet } from '@nostr-dev-kit/ndk';
 
-import { useNdk } from '../../../../hooks';
+import { useStore } from '../../../../store';
 import { Nip29GroupChat } from '../../../types';
 
 export const sendGroupChat = ({
+  relay,
   groupId,
   chat,
   onSuccess,
   onError,
 }: {
+  relay: string;
   groupId: string;
   chat: Pick<Nip29GroupChat, 'content' | 'parentId'>;
   onSuccess?: () => void;
   onError?: () => void;
 }) => {
-  const { ndk } = useNdk();
+  const ndk = useStore.getState().ndk;
   if (!ndk) return;
 
   if (!groupId) return;
@@ -25,7 +27,7 @@ export const sendGroupChat = ({
   event.tags = [['h', groupId]];
   chat.parentId && event.tags.push(['q', chat.parentId]);
 
-  event.publish().then(
+  event.publish(NDKRelaySet.fromRelayUrls([relay], ndk)).then(
     (r) => {
       if (r.size > 0) {
         onSuccess?.();

@@ -1,20 +1,22 @@
-import { NDKEvent } from '@nostr-dev-kit/ndk';
+import { NDKEvent, NDKRelaySet } from '@nostr-dev-kit/ndk';
 
-import { useNdk } from '../../../../hooks';
+import { useStore } from '../../../../store';
 import { Nip29GroupThreadComment } from '../../../types';
 
 export const sendGroupThreadComment = ({
+  relay,
   groupId,
   threadComment,
   onSuccess,
   onError,
 }: {
+  relay: string;
   groupId: string;
   threadComment: Pick<Nip29GroupThreadComment, 'content' | 'rootId'>;
   onSuccess?: () => void;
   onError?: () => void;
 }) => {
-  const { ndk } = useNdk();
+  const ndk = useStore.getState().ndk;
   if (!ndk) return;
 
   if (!groupId) return;
@@ -28,7 +30,7 @@ export const sendGroupThreadComment = ({
     ['E', threadComment.rootId],
   ];
 
-  event.publish().then(
+  event.publish(NDKRelaySet.fromRelayUrls([relay], ndk)).then(
     (r) => {
       if (r.size > 0) {
         onSuccess?.();

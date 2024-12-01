@@ -1,20 +1,22 @@
-import { NDKEvent } from '@nostr-dev-kit/ndk';
+import { NDKEvent, NDKRelaySet } from '@nostr-dev-kit/ndk';
 
-import { useNdk } from '../../../../hooks';
+import { useStore } from '../../../../store';
 import { Nip29GroupLeaveRequest } from '../../../types';
 
 export const sendGroupLeaveRequest = ({
+  relay,
   groupId,
   leaveRequest,
   onSuccess,
   onError,
 }: {
+  relay: string;
   groupId: string;
   leaveRequest: Pick<Nip29GroupLeaveRequest, 'reason'>;
   onSuccess?: () => void;
   onError?: () => void;
 }) => {
-  const { ndk } = useNdk();
+  const ndk = useStore.getState().ndk;
   if (!ndk) return;
 
   if (!groupId) return;
@@ -24,7 +26,7 @@ export const sendGroupLeaveRequest = ({
   event.content = leaveRequest.reason || '';
   event.tags = [['h', groupId]];
 
-  event.publish().then(
+  event.publish(NDKRelaySet.fromRelayUrls([relay], ndk)).then(
     (r) => {
       if (r.size > 0) {
         onSuccess?.();
