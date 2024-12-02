@@ -17,7 +17,7 @@ Nostr-Hooks is a stateful wrapper library of React hooks around [NDK](https://gi
 ## Features
 
 - Provides high-level hooks to interact with the Nostr protocol, making it easy to integrate Nostr into React applications.
-- Provides a single instance of Nostr pool for the entire application, which is reused by all components.
+- Provides a single instance of NDK for the entire application, which is reused by all components.
 - Creates a single connection to each Nostr relay at a time and reuses it for all subscriptions, reducing network overhead.
 - Automatically manages subscriptions from multiple components and delivers only the events that each component needs.
 - Automatically batches multiple subscriptions from different components into a single subscription request, further reducing network overhead.
@@ -80,15 +80,15 @@ Here are some examples of how to use the `useSubscription` hook:
 ```tsx
 import { useSubscription } from 'nostr-hooks';
 
-const MyComponent = ({ pubkey }: { pubkey: string | undefined }) => {
-  const { events, isLoading, createSubscription, removeSubscription } = useSubscription(
-    `${pubkey}-kind1`
-  );
+const UserNotes = ({ pubkey }: { pubkey: string | undefined }) => {
+  const subId = `${pubkey}-notes`;
+
+  const { events, isLoading, createSubscription, removeSubscription } = useSubscription(subId);
 
   useEffect(() => {
     if (!pubkey) return;
 
-    const filters = [{ authors: [pubkey], kinds: [1] }];
+    const filters = [{ authors: [pubkey], kinds: [1], limit: 50 }];
 
     createSubscription(filters);
 
@@ -105,8 +105,7 @@ const MyComponent = ({ pubkey }: { pubkey: string | undefined }) => {
     <ul>
       {events.map((event) => (
         <li key={event.id}>
-          <p>{event.pubkey}</p>
-          <p>{event.kind}</p>
+          <p>{event.content}</p>
         </li>
       ))}
     </ul>
@@ -119,7 +118,7 @@ The `useSubscription` hook requires a `string` parameter as the subscription id.
 The hook returns an object with the following properties:
 
 - `createSubscription`: A function that can be used to create a subscription with the provided filters and options.
-- `removeSubscription`: A function that can be used to remove the subscription and clean up the events.
+- `removeSubscription`: A function that can be used to remove the subscription and clean up the events if no other components are using the same subscription.
 - `events`: An array of events that match the filters.
 - `eose`: A boolean flag indicating whether the subscription has reached the end of the stream.
 - `isLoading`: A boolean flag indicating whether the subscription is loading (no events yet, and no eose).
@@ -269,6 +268,102 @@ const MyComponent = () => {
 ```
 
 > If the user is not logged in, the `activeUser` will be `undefined`.
+
+### Best Practices
+
+#### Custom Hooks
+
+Create custom hooks to encapsulate the logic for fetching and managing data. This will help you reuse the logic across multiple components and keep your codebase clean and maintainable.
+Additionally, this approach helps in reducing memory usage by reusing the same subscription and events across multiple components.
+
+```tsx
+import { useEffect } from 'react';
+import { useSubscription } from 'nostr-hooks';
+
+export const useUserNotes = (pubkey: string | undefined) => {
+  const subId = `${pubkey}-notes`;
+
+  const { createSubscription, removeSubscription, events, isLoading, loadMore } =
+    useSubscription(subId);
+
+  useEffect(() => {
+    if (!pubkey) return;
+
+    const filters = [{ authors: [pubkey], kinds: [1], limit: 50 }];
+
+    createSubscription(filters);
+
+    return () => {
+      removeSubscription();
+    };
+  }, [pubkey, createSubscription, removeSubscription]);
+
+  return { events, isLoading, loadMore };
+};
+```
+
+#### Subscription Ids
+
+Use meaningful subscription ids to categorize events and manage subscriptions effectively. It's recommended to define subscription ids based on your filter parameters, similar to a query key.
+
+```tsx
+const subId = `${pubkey}-notes`;
+```
+
+You can use the same subscription id across multiple components to share the same subscription and events. Nostr-Hooks consolidates all subscriptions from various components into a single request, ensuring each component receives only the events it requires, based on their subscription ids.
+
+#### Cleanup
+
+Always remember to remove subscriptions and clean up events when a component unmounts. This will prevent memory leaks and ensure that your application runs smoothly.
+
+```tsx
+useEffect(() => {
+  return () => {
+    removeSubscription();
+  };
+}, [removeSubscription]);
+```
+
+## NIP-29
+
+NIP-29 has been integrated in v4! This update introduces several new hooks and methods for interacting with NIP-29 Relay-based groups. We've implemented an internal store following best practices for state management in React, offering a comprehensive set of hooks and methods that are fast, efficient, and user-friendly.
+
+### NIP-29 Queries
+
+There are several hooks available to query data from NIP-29 Relay-based groups:
+
+- **`useGroupMetadata`:** Subscribe to a group's metadata and its updates.
+- **`useGroupMembers`:** Subscribe to a group's members and their updates.
+- **`useGroupAdmins`:** Subscribe to a group's admins and their updates.
+- **`useAllGroupsMetadataRecords`:** Subscribe to all groups' metadata records available on the NIP-29 Relay and their updates.
+- **`useGroupRoles`:** Subscribe to a group's roles and their updates. You can also filter roles by various parameters.
+- **`useGroupChats`:** Subscribe to a group's chats and their updates. You can also filter chats by various parameters.
+- **`useGroupReactions`:** Subscribe to a group's reactions and their updates. You can also filter reactions by various parameters.
+- **`useGroupJoinRequests`:** Subscribe to a group's join requests and their updates. You can also filter join requests by various parameters.
+- **`useGroupLeaveRequests`:** Subscribe to a group's leave requests and their updates. You can also filter leave requests by various parameters.
+- **`useGroupThreads`:** Subscribe to a group's threads and their updates. You can also filter threads by various parameters.
+- **`useGroupThreadComments`:** Subscribe to a group's thread comments and their updates. You can also filter thread comments by various parameters.
+
+### NIP-29 Mutations
+
+There are several methods available to mutate data on NIP-29 Relay-based groups:
+
+- **Admin Actions**:
+
+  - **`putGroupUser`:** Add/Update a user to a group with its roles.
+  - **`removeGroupUser`:** Remove a user from a group.
+  - **`editGroupMetadata`:** Edit a group's metadata.
+  - **`deleteGroup`:** Delete a group.
+  - **`deleteGroupEvent`:** Delete a group's event.
+  - **`createGroupInvite`:** Create an invite code for a group.
+
+- **User Actions**:
+  - **`sendJoinRequest`:** Send a join request to a group.
+  - **`sendLeaveRequest`:** Send a leave request to a group.
+  - **`sendGroupChat`:** Send a chat message to a group.
+  - **`sendGroupReaction`:** Send a reaction to a group's chat message.
+  - **`sendGroupThread`:** Send a thread to a group.
+  - **`sendGroupThreadComment`:** Send a comment to a group's thread.
 
 ## Contributing
 
