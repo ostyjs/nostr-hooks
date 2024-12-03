@@ -11,34 +11,50 @@ type ProfileParams = {
   relayUrls?: string[];
 };
 
+export type ProfileStatus = 'idle' | 'loading' | 'success' | 'not-found' | 'error';
+
 /**
  * Custom hook to fetch and manage a user profile.
  *
  * @param [profileParams] - Optional parameters to fetch the profile.
- * @returns An object containing the user profile.
+ * @returns An object containing the user profile, null if the profile is not found,
+ * or undefined if the profile is being fetched.
+ * The status of the profile fetch is also returned.
  *
  * @example
  * const { profile } = useProfile({ nip05: 'example@domain.com' });
  */
 export const useProfile = (profileParams?: ProfileParams) => {
-  const [profile, setProfile] = useState<NDKUserProfile | undefined>(undefined);
+  const [profile, setProfile] = useState<NDKUserProfile | null | undefined>();
+  const [status, setStatus] = useState<ProfileStatus>('idle');
 
   const { ndk } = useNdk();
 
   useEffect(() => {
+    setStatus('idle');
+
     if (!profileParams) return;
     if (profileParams.constructor === Object && Object.keys(profileParams).length === 0) return;
     if (!profileParams.nip05 && !profileParams.pubkey && !profileParams.npub) return;
     if (!ndk) return;
 
+    setStatus('loading');
+
     ndk
       .getUser(profileParams)
       .fetchProfile()
       .then((profile) => {
-        setProfile(profile || undefined);
+        setProfile(profile);
+
+        setStatus(profile ? 'success' : 'not-found');
+      })
+      .catch(() => {
+        setProfile(undefined);
+        setStatus('error');
       });
   }, [
     setProfile,
+    setStatus,
     profileParams?.nip05,
     profileParams?.pubkey,
     profileParams?.npub,
@@ -47,5 +63,5 @@ export const useProfile = (profileParams?: ProfileParams) => {
     ndk,
   ]);
 
-  return { profile };
+  return { profile, status };
 };

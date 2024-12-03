@@ -160,7 +160,7 @@ const MyComponent = () => {
 
 ### Fetch Profile for a user
 
-The `useProfile` hook is used to fetch profile for a given user based on their `pubkey`, `npub`, `nip46 address`, or `nip05`. It returns the fetched profile.
+The `useProfile` hook is used to fetch profile for a given user based on their `pubkey`, `npub`, `nip46 address`, or `nip05`. It returns the fetched profile, or null if the profile is not found.
 
 ```tsx
 import { useProfile } from 'nostr-hooks';
@@ -168,10 +168,14 @@ import { useProfile } from 'nostr-hooks';
 const MyComponent = () => {
   const { profile } = useProfile({ pubkey: '...' });
 
+  if (profile === undefined) return <p>Loading...</p>;
+
+  if (profile === null) return <p>Profile not found</p>;
+
   return (
     <div>
-      <p>{profile?.displayName}</p>
-      <p>{profile?.about}</p>
+      <p>{profile.displayName}</p>
+      <p>{profile.about}</p>
     </div>
   );
 };
@@ -257,7 +261,9 @@ import { useActiveUser } from 'nostr-hooks';
 const MyComponent = () => {
   const { activeUser } = useActiveUser();
 
-  if (!activeUser) return <p>Not logged in</p>;
+  if (activeUser === undefined) return <p>Loading...</p>;
+
+  if (activeUser === null) return <p>Not logged in</p>;
 
   return (
     <div>
