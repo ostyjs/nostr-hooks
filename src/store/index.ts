@@ -46,9 +46,7 @@ type Actions = {
 
   removeSubscription: RemoveSubscription;
 
-  addEvent: (subId: string, event: NDKEvent) => void;
-
-  addEvents: (subId: string, events: NDKEvent[]) => void;
+  addEvent: (subId: string, event: NDKEvent, replaceOlderReplaceableEvents?: boolean) => void;
 
   setEose: (subId: string, eose: boolean) => void;
 
@@ -83,13 +81,22 @@ export const useStore = create<State & Actions>()(
       },
 
       // subscription actions
-      createSubscription: (subId, filters, opts, relayUrls, autoStart) => {
+      createSubscription: (
+        subId,
+        filters,
+        opts,
+        relayUrls,
+        autoStart,
+        replaceOlderReplaceableEvents
+      ) => {
         if (!subId) return null;
 
         const sub = get().subscriptions[subId];
         if (sub) {
           set(
-            produce((state) => {
+            produce((state: State) => {
+              if (!state.subscriptions[subId]) return;
+
               state.subscriptions[subId].listenersCount += 1;
             })
           );
@@ -108,7 +115,7 @@ export const useStore = create<State & Actions>()(
         );
 
         subscription.on('event', (event) => {
-          get().addEvent(subId, event);
+          get().addEvent(subId, event, replaceOlderReplaceableEvents);
         });
         subscription.on('eose', () => {
           get().setEose(subId, true);
@@ -120,7 +127,7 @@ export const useStore = create<State & Actions>()(
         });
 
         set(
-          produce((state) => {
+          produce((state: State) => {
             state.subscriptions[subId] = {
               subscription,
               events: [],
@@ -138,7 +145,7 @@ export const useStore = create<State & Actions>()(
         if (!subId) return;
 
         set(
-          produce((state) => {
+          produce((state: State) => {
             if (!state.subscriptions[subId]) return;
 
             state.subscriptions[subId].listenersCount -= 1;
@@ -151,32 +158,32 @@ export const useStore = create<State & Actions>()(
         );
       },
 
-      addEvent: (subId, event) =>
+      addEvent: (subId, event, replaceOlderReplaceableEvents = true) =>
         set(
-          produce((state) => {
+          produce((state: State) => {
             if (!subId) return;
+            if (!state.subscriptions[subId]) return;
 
-            state.subscriptions[subId].events = [...state.subscriptions[subId].events, event]
-              .filter((e, i, a) => a.findIndex((ee) => ee.id === e.id) === i)
-              .sort((a, b) => a.created_at! - b.created_at!);
-          })
-        ),
-
-      addEvents: (subId, events) =>
-        set(
-          produce((state) => {
-            if (!subId) return;
-
-            state.subscriptions[subId].events = [...state.subscriptions[subId].events, ...events]
-              .filter((e, i, a) => a.findIndex((ee) => ee.id === e.id) === i)
+            state.subscriptions[subId].events = [event, ...state.subscriptions[subId].events]
+              .filter(
+                (e, i, a) =>
+                  a.findIndex((ee) => {
+                    if (ee.isParamReplaceable() && replaceOlderReplaceableEvents) {
+                      return ee.dTag === e.dTag;
+                    } else {
+                      return ee.id === e.id;
+                    }
+                  }) === i
+              )
               .sort((a, b) => a.created_at! - b.created_at!);
           })
         ),
 
       setEose: (subId, eose) =>
         set(
-          produce((state) => {
+          produce((state: State) => {
             if (!subId) return;
+            if (!state.subscriptions[subId]) return;
 
             state.subscriptions[subId].eose = eose;
           })
@@ -184,8 +191,9 @@ export const useStore = create<State & Actions>()(
 
       setHasMore: (subId, hasMore) =>
         set(
-          produce((state) => {
+          produce((state: State) => {
             if (!subId) return;
+            if (!state.subscriptions[subId]) return;
 
             state.subscriptions[subId].hasMore = hasMore;
           })
@@ -237,7 +245,7 @@ export const useStore = create<State & Actions>()(
         const ndk = new NDK(constructorParams);
 
         set(
-          produce((state) => {
+          produce((state: State) => {
             state.constructorParams = constructorParams;
             state.ndk = ndk;
           })
@@ -248,7 +256,7 @@ export const useStore = create<State & Actions>()(
         const newConstructorParams = { ...get().constructorParams };
 
         set(
-          produce((state) => {
+          produce((state: State) => {
             if (signer) {
               newConstructorParams.signer = signer;
             } else {
@@ -276,7 +284,7 @@ export const useStore = create<State & Actions>()(
           .blockUntilReady()
           .then(() => {
             set(
-              produce((state) => {
+              produce((state: State) => {
                 state.loginData.privateKey = undefined;
                 state.loginData.loginMethod = 'Extension';
                 state.loginData.nip46Address = undefined;
@@ -289,7 +297,7 @@ export const useStore = create<State & Actions>()(
           })
           .catch((err) => {
             set(
-              produce((state) => {
+              produce((state: State) => {
                 state.loginData.privateKey = undefined;
                 state.loginData.loginMethod = undefined;
                 state.loginData.nip46Address = undefined;
@@ -320,7 +328,7 @@ export const useStore = create<State & Actions>()(
 
         if (!_addr) {
           set(
-            produce((state) => {
+            produce((state: State) => {
               state.loginData.privateKey = undefined;
               state.loginData.loginMethod = undefined;
               state.loginData.nip46Address = undefined;
@@ -342,7 +350,7 @@ export const useStore = create<State & Actions>()(
           .blockUntilReady()
           .then(() => {
             set(
-              produce((state) => {
+              produce((state: State) => {
                 state.loginData.privateKey = undefined;
                 state.loginData.loginMethod = 'Remote';
                 state.loginData.nip46Address = _addr;
@@ -355,7 +363,7 @@ export const useStore = create<State & Actions>()(
           })
           .catch((err) => {
             set(
-              produce((state) => {
+              produce((state: State) => {
                 state.loginData.privateKey = undefined;
                 state.loginData.loginMethod = undefined;
                 state.loginData.nip46Address = undefined;
@@ -381,7 +389,7 @@ export const useStore = create<State & Actions>()(
           .blockUntilReady()
           .then(() => {
             set(
-              produce((state) => {
+              produce((state: State) => {
                 state.loginData.privateKey = privateKey;
                 state.loginData.loginMethod = 'PrivateKey';
                 state.loginData.nip46Address = undefined;
@@ -394,7 +402,7 @@ export const useStore = create<State & Actions>()(
           })
           .catch((err) => {
             set(
-              produce((state) => {
+              produce((state: State) => {
                 state.loginData.privateKey = undefined;
                 state.loginData.loginMethod = undefined;
                 state.loginData.nip46Address = undefined;
@@ -419,7 +427,7 @@ export const useStore = create<State & Actions>()(
 
       logout: () => {
         set(
-          produce((state) => {
+          produce((state: State) => {
             state.loginData.privateKey = undefined;
             state.loginData.loginMethod = undefined;
             state.loginData.nip46Address = undefined;

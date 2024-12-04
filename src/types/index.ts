@@ -26,7 +26,8 @@ export type CreateSubscription = (
   filters: NDKFilter[],
   opts?: NDKSubscriptionOptions,
   relayUrls?: string[],
-  autoStart?: boolean
+  autoStart?: boolean,
+  replaceOlderReplaceableEvents?: boolean
 ) => NDKSubscription | null;
 
 export type RemoveSubscription = (subId: string | undefined) => void;
