@@ -1,6 +1,6 @@
 {
   "name": "nostr-hooks",
-  "version": "4.1.8",
+  "version": "4.1.9",
   "description": "React hooks for developing Nostr clients",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -89,8 +89,8 @@
     "typescript": "^5.6.2"
   },
   "dependencies": {
-    "@nostr-dev-kit/ndk": "^2.10.6",
-    "@nostr-dev-kit/ndk-cache-dexie": "^2.5.7",
+    "@nostr-dev-kit/ndk": "^2.10.7",
+    "@nostr-dev-kit/ndk-cache-dexie": "^2.5.8",
     "@uidotdev/usehooks": "^2.4.1",
     "immer": "^10.1.1",
     "nostr-tools": "^2.10.3",
