@@ -83,7 +83,7 @@ import { useSubscription } from 'nostr-hooks';
 const UserNotes = ({ pubkey }: { pubkey: string | undefined }) => {
   const subId = `${pubkey}-notes`;
 
-  const { events, isLoading, createSubscription, removeSubscription } = useSubscription(subId);
+  const { events, isLoading, createSubscription } = useSubscription(subId);
 
   useEffect(() => {
     if (!pubkey) return;
@@ -91,11 +91,7 @@ const UserNotes = ({ pubkey }: { pubkey: string | undefined }) => {
     const filters = [{ authors: [pubkey], kinds: [1], limit: 50 }];
 
     createSubscription(filters);
-
-    return () => {
-      removeSubscription();
-    };
-  }, [pubkey, createSubscription, removeSubscription]);
+  }, [pubkey, createSubscription]);
 
   if (isLoading) return <p>Loading...</p>;
 
@@ -289,8 +285,7 @@ import { useSubscription } from 'nostr-hooks';
 export const useUserNotes = (pubkey: string | undefined) => {
   const subId = `${pubkey}-notes`;
 
-  const { createSubscription, removeSubscription, events, isLoading, loadMore } =
-    useSubscription(subId);
+  const { events, isLoading, loadMore, createSubscription } = useSubscription(subId);
 
   useEffect(() => {
     if (!pubkey) return;
@@ -298,11 +293,7 @@ export const useUserNotes = (pubkey: string | undefined) => {
     const filters = [{ authors: [pubkey], kinds: [1], limit: 50 }];
 
     createSubscription(filters);
-
-    return () => {
-      removeSubscription();
-    };
-  }, [pubkey, createSubscription, removeSubscription]);
+  }, [pubkey, createSubscription]);
 
   return { events, isLoading, loadMore };
 };
@@ -317,18 +308,6 @@ const subId = `${pubkey}-notes`;
 ```
 
 You can use the same subscription id across multiple components to share the same subscription and events. Nostr-Hooks consolidates all subscriptions from various components into a single request, ensuring each component receives only the events it requires, based on their subscription ids.
-
-#### Cleanup
-
-Always remember to remove subscriptions and clean up events when a component unmounts. This will prevent memory leaks and ensure that your application runs smoothly.
-
-```tsx
-useEffect(() => {
-  return () => {
-    removeSubscription();
-  };
-}, [removeSubscription]);
-```
 
 ## NIP-29
 
