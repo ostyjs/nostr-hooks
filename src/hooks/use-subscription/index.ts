@@ -1,7 +1,7 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
-import { CreateSubscriptionParams } from 'src/types';
 import { useStore } from '../../store';
+import { CreateSubscriptionParams } from '../../types';
 import { useNdk } from '../use-ndk';
 
 /**
@@ -46,7 +46,7 @@ export const useSubscription = (subId: string | undefined) => {
     [subscription?.events, subscription?.eose]
   );
 
-  useCallback(() => {
+  useEffect(() => {
     return () => {
       removeSubscription();
     };
