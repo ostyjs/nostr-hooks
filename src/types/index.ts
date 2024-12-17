@@ -21,14 +21,17 @@ export type Subscriptions = Record<
   }
 >;
 
-export type CreateSubscription = (
-  subId: string,
-  filters: NDKFilter[],
-  opts?: NDKSubscriptionOptions,
-  relayUrls?: string[],
-  autoStart?: boolean,
-  replaceOlderReplaceableEvents?: boolean
-) => NDKSubscription | null;
+export type CreateSubscriptionParams = {
+  subId: string;
+  filters: NDKFilter[];
+  opts?: NDKSubscriptionOptions;
+  relayUrls?: string[];
+  autoStart?: boolean;
+  onEvent?: (event: NDKEvent) => void;
+  replaceOlderReplaceableEvents?: boolean;
+};
+
+export type CreateSubscription = (params: CreateSubscriptionParams) => NDKSubscription | null;
 
 export type RemoveSubscription = (subId: string | undefined) => void;
 

@@ -81,14 +81,15 @@ export const useStore = create<State & Actions>()(
       },
 
       // subscription actions
-      createSubscription: (
+      createSubscription: ({
         subId,
         filters,
         opts,
         relayUrls,
+        onEvent,
         autoStart,
-        replaceOlderReplaceableEvents
-      ) => {
+        replaceOlderReplaceableEvents,
+      }) => {
         if (!subId) return null;
 
         const sub = get().subscriptions[subId];
@@ -116,6 +117,7 @@ export const useStore = create<State & Actions>()(
 
         subscription.on('event', (event) => {
           get().addEvent(subId, event, replaceOlderReplaceableEvents);
+          onEvent?.(event);
         });
         subscription.on('eose', () => {
           get().setEose(subId, true);

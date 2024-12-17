@@ -7,18 +7,6 @@ import { Nip29GroupAdmin } from '../../types';
 
 const updateGroupAdmins = useNip29Store.getState().updateGroupAdmins;
 
-const onEvent = (subId: string | undefined, groupId: string | undefined, event: NDKEvent) => {
-  const admins: Nip29GroupAdmin[] = event
-    .getMatchingTags('p')
-    .filter((pTag) => pTag.length > 1)
-    .map((pTag) => ({
-      pubkey: pTag[1] || '',
-      roles: pTag.slice(2),
-    }));
-
-  updateGroupAdmins(subId, groupId, admins);
-};
-
 export const useGroupAdmins = (relay: string | undefined, groupId: string | undefined) => {
   const subId = relay && groupId ? `${relay}-${groupId}-admins` : undefined;
 
@@ -26,20 +14,27 @@ export const useGroupAdmins = (relay: string | undefined, groupId: string | unde
     subId && groupId ? state.groups[subId]?.[groupId]?.admins : undefined
   );
 
-  const { events, isLoading, createSubscription, removeSubscription } = useSubscription(subId);
+  const { events, isLoading, createSubscription } = useSubscription(subId);
 
   useEffect(() => {
     if (!relay || !groupId || !subId) return;
 
     const filters: NDKFilter[] = [{ kinds: [39001], '#d': [groupId], limit: 1 }];
+    const relayUrls = [relay];
 
-    const sub = createSubscription(filters, {}, [relay]);
-    sub?.on('event', (event) => onEvent(subId, groupId, event));
-
-    return () => {
-      removeSubscription();
+    const onEvent = (event: NDKEvent) => {
+      const admins: Nip29GroupAdmin[] = event
+        .getMatchingTags('p')
+        .filter((pTag) => pTag.length > 1)
+        .map((pTag) => ({
+          pubkey: pTag[1] || '',
+          roles: pTag.slice(2),
+        }));
+      updateGroupAdmins(subId, groupId, admins);
     };
-  }, [subId, relay, groupId, createSubscription, removeSubscription]);
+
+    createSubscription({ filters, relayUrls, onEvent });
+  }, [subId, relay, groupId, createSubscription]);
 
   return {
     admins,
