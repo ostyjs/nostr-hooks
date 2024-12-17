@@ -35,7 +35,7 @@ export type CreateSubscription = (params: CreateSubscriptionParams) => NDKSubscr
 
 export type RemoveSubscription = (subId: string | undefined) => void;
 
-export type InitNdk = (constructorParams?: NDKConstructorParams) => void;
+export type InitNdk = (constructorParams?: NDKConstructorParams, update?: boolean) => void;
 
 export type SetSigner = (signer: NDKSigner | undefined) => void;
 
