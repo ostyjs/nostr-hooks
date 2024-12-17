@@ -241,15 +241,15 @@ export const useStore = create<State & Actions>()(
       },
 
       // ndk actions
-      initNdk: (constructorParams) => {
-        if (!constructorParams) return;
-
-        const ndk = new NDK(constructorParams);
+      initNdk: (constructorParams, update = false) => {
+        const newConstructorParams = update
+          ? { ...get().constructorParams, ...constructorParams }
+          : { ...constructorParams };
 
         set(
           produce((state: State) => {
-            state.constructorParams = constructorParams;
-            state.ndk = ndk;
+            state.constructorParams = newConstructorParams;
+            state.ndk = new NDK(newConstructorParams);
           })
         );
       },
@@ -267,6 +267,7 @@ export const useStore = create<State & Actions>()(
 
             const ndk = new NDK(newConstructorParams);
 
+            state.constructorParams = newConstructorParams;
             state.ndk = ndk;
           })
         );
