@@ -87,8 +87,8 @@ export const useStore = create<State & Actions>()(
         opts,
         relayUrls,
         onEvent,
-        autoStart,
-        replaceOlderReplaceableEvents,
+        autoStart = true,
+        replaceOlderReplaceableEvents = true,
       }) => {
         if (!subId) return null;
 
@@ -108,12 +108,9 @@ export const useStore = create<State & Actions>()(
         const { ndk } = get();
         if (!ndk) return null;
 
-        const subscription = ndk.subscribe(
-          filters,
-          opts,
-          relayUrls ? NDKRelaySet.fromRelayUrls(relayUrls, ndk) : undefined,
-          autoStart
-        );
+        const relaySet = relayUrls ? NDKRelaySet.fromRelayUrls(relayUrls, ndk) : undefined;
+
+        const subscription = ndk.subscribe(filters, opts, relaySet, autoStart);
 
         subscription.on('event', (event) => {
           get().addEvent(subId, event, replaceOlderReplaceableEvents);
@@ -160,7 +157,7 @@ export const useStore = create<State & Actions>()(
         );
       },
 
-      addEvent: (subId, event, replaceOlderReplaceableEvents = true) =>
+      addEvent: (subId, event, replaceOlderReplaceableEvents) =>
         set(
           produce((state: State) => {
             if (!subId) return;
