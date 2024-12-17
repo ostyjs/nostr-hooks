@@ -7,18 +7,6 @@ import { Nip29GroupThread } from '../../types';
 
 const addGroupThread = useNip29Store.getState().addGroupThread;
 
-const onEvent = (subId: string | undefined, groupId: string | undefined, event: NDKEvent) => {
-  const thread: Nip29GroupThread = {
-    id: event.id,
-    pubkey: event.pubkey,
-    content: event.content,
-    subject: event.getMatchingTags('subject')?.[0]?.[1] || '',
-    timestamp: event.created_at || 0,
-  };
-
-  addGroupThread(subId, groupId, thread);
-};
-
 export const useGroupThreads = (
   relay: string | undefined,
   groupId: string | undefined,
@@ -43,8 +31,7 @@ export const useGroupThreads = (
     subId && groupId ? state.groups[subId]?.[groupId]?.threads : undefined
   );
 
-  const { events, hasMore, isLoading, createSubscription, loadMore, removeSubscription } =
-    useSubscription(subId);
+  const { events, hasMore, isLoading, createSubscription, loadMore } = useSubscription(subId);
 
   useEffect(() => {
     if (!relay || !groupId || !subId) return;
@@ -58,12 +45,22 @@ export const useGroupThreads = (
     if (filter?.since) f.since = filter.since;
     if (filter?.until) f.until = filter.until;
 
-    const sub = createSubscription([f], {}, [relay]);
-    sub?.on('event', (event) => onEvent(subId, groupId, event));
+    const filters = [f];
+    const relayUrls = [relay];
 
-    return () => {
-      removeSubscription();
+    const onEvent = (event: NDKEvent) => {
+      const thread: Nip29GroupThread = {
+        id: event.id,
+        pubkey: event.pubkey,
+        content: event.content,
+        subject: event.getMatchingTags('subject')?.[0]?.[1] || '',
+        timestamp: event.created_at || 0,
+      };
+
+      addGroupThread(subId, groupId, thread);
     };
+
+    createSubscription({ filters, relayUrls, onEvent });
   }, [
     subId,
     relay,
@@ -75,7 +72,6 @@ export const useGroupThreads = (
     filter?.since,
     filter?.until,
     createSubscription,
-    removeSubscription,
   ]);
 
   return {

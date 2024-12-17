@@ -7,29 +7,6 @@ import { Nip29GroupMetadata } from '../../types';
 
 const updateGroupMetadata = useNip29Store.getState().updateGroupMetadata;
 
-const onEvent = (subId: string | undefined, event: NDKEvent) => {
-  const { dTag } = event;
-  if (!dTag) return;
-
-  const nameTag = event.getMatchingTags('name')[0];
-  const pictureTag = event.getMatchingTags('picture')[0];
-  const aboutTag = event.getMatchingTags('about')[0];
-  const isOpen = event.getMatchingTags('open') ? true : false;
-  const isPublic = event.getMatchingTags('public') ? true : false;
-
-  const metadata: Nip29GroupMetadata = {
-    about: aboutTag?.[1] || '',
-    isOpen,
-    isPublic,
-    name: nameTag?.[1] || '<unnamed>',
-    picture: pictureTag?.[1] || '',
-  };
-
-  const groupId = dTag;
-
-  updateGroupMetadata(subId, groupId, metadata);
-};
-
 export const useAllGroupsMetadataRecords = (relay: string | undefined) => {
   const subId = relay ? `${relay}-allGroups-metadata` : undefined;
 
@@ -49,21 +26,37 @@ export const useAllGroupsMetadataRecords = (relay: string | undefined) => {
     [allGroups]
   );
 
-  const { events, isLoading, hasMore, createSubscription, loadMore, removeSubscription } =
-    useSubscription(subId);
+  const { events, isLoading, hasMore, createSubscription, loadMore } = useSubscription(subId);
 
   useEffect(() => {
     if (!relay || !subId) return;
 
     const filters: NDKFilter[] = [{ kinds: [39000], limit: 100 }];
+    const relayUrls = [relay];
 
-    const sub = createSubscription(filters, {}, [relay]);
-    sub?.on('event', (event) => onEvent(subId, event));
+    const onEvent = (event: NDKEvent) => {
+      const { dTag: groupId } = event;
+      if (!groupId) return;
 
-    return () => {
-      removeSubscription();
+      const name = event.getMatchingTags('name')?.[0]?.[1] || '<unnamed>';
+      const picture = event.getMatchingTags('picture')?.[0]?.[1] || '';
+      const about = event.getMatchingTags('about')?.[0]?.[1] || '';
+      const isOpen = event.getMatchingTags('open') ? true : false;
+      const isPublic = event.getMatchingTags('public') ? true : false;
+
+      const metadata: Nip29GroupMetadata = {
+        about,
+        isOpen,
+        isPublic,
+        name,
+        picture,
+      };
+
+      updateGroupMetadata(subId, groupId, metadata);
     };
-  }, [subId, relay, createSubscription, removeSubscription]);
+
+    createSubscription({ filters, relayUrls, onEvent });
+  }, [subId, relay, createSubscription]);
 
   return {
     metadataRecords,

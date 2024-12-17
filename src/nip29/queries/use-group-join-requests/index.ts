@@ -7,18 +7,6 @@ import { Nip29GroupJoinRequest } from '../../types';
 
 const addGroupJoinRequest = useNip29Store.getState().addGroupJoinRequest;
 
-const onEvent = (subId: string | undefined, groupId: string | undefined, event: NDKEvent) => {
-  const joinRequest: Nip29GroupJoinRequest = {
-    id: event.id,
-    pubkey: event.pubkey,
-    reason: event.content || '',
-    code: event.getMatchingTags('code')?.[0]?.[1] || '',
-    timestamp: event.created_at || 0,
-  };
-
-  addGroupJoinRequest(subId, groupId, joinRequest);
-};
-
 export const useGroupJoinRequests = (
   relay: string | undefined,
   groupId: string | undefined,
@@ -43,8 +31,7 @@ export const useGroupJoinRequests = (
     subId && groupId ? state.groups[subId]?.[groupId]?.joinRequests : undefined
   );
 
-  const { events, hasMore, isLoading, createSubscription, loadMore, removeSubscription } =
-    useSubscription(subId);
+  const { events, hasMore, isLoading, createSubscription, loadMore } = useSubscription(subId);
 
   useEffect(() => {
     if (!relay || !groupId || !subId) return;
@@ -58,12 +45,22 @@ export const useGroupJoinRequests = (
     if (filter?.since) f.since = filter.since;
     if (filter?.until) f.until = filter.until;
 
-    const sub = createSubscription([f], {}, [relay]);
-    sub?.on('event', (event) => onEvent(subId, groupId, event));
+    const filters = [f];
+    const relayUrls = [relay];
 
-    return () => {
-      removeSubscription();
+    const onEvent = (event: NDKEvent) => {
+      const joinRequest: Nip29GroupJoinRequest = {
+        id: event.id,
+        pubkey: event.pubkey,
+        reason: event.content || '',
+        code: event.getMatchingTags('code')?.[0]?.[1] || '',
+        timestamp: event.created_at || 0,
+      };
+
+      addGroupJoinRequest(subId, groupId, joinRequest);
     };
+
+    createSubscription({ filters, relayUrls, onEvent });
   }, [
     subId,
     relay,
@@ -75,7 +72,6 @@ export const useGroupJoinRequests = (
     filter?.since,
     filter?.until,
     createSubscription,
-    removeSubscription,
   ]);
 
   return {

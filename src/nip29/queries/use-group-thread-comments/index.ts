@@ -7,18 +7,6 @@ import { Nip29GroupThreadComment } from '../../types';
 
 const addGroupThreadComment = useNip29Store.getState().addGroupThreadComment;
 
-const onEvent = (subId: string | undefined, groupId: string | undefined, event: NDKEvent) => {
-  const threadComment: Nip29GroupThreadComment = {
-    id: event.id,
-    pubkey: event.pubkey,
-    content: event.content,
-    timestamp: event.created_at || 0,
-    rootId: event.getMatchingTags('E')?.[0]?.[1] || '',
-  };
-
-  addGroupThreadComment(subId, groupId, threadComment);
-};
-
 export const useGroupThreadComments = (
   relay: string | undefined,
   groupId: string | undefined,
@@ -47,8 +35,7 @@ export const useGroupThreadComments = (
     subId && groupId ? state.groups[subId]?.[groupId]?.threadComments : undefined
   );
 
-  const { events, hasMore, isLoading, createSubscription, loadMore, removeSubscription } =
-    useSubscription(subId);
+  const { events, hasMore, isLoading, createSubscription, loadMore } = useSubscription(subId);
 
   useEffect(() => {
     if (!relay || !groupId || !subId) return;
@@ -64,12 +51,22 @@ export const useGroupThreadComments = (
     if (filter?.since) f.since = filter.since;
     if (filter?.until) f.until = filter.until;
 
-    const sub = createSubscription([f], {}, [relay]);
-    sub?.on('event', (event) => onEvent(subId, groupId, event));
+    const filters = [f];
+    const relayUrls = [relay];
 
-    return () => {
-      removeSubscription();
+    const onEvent = (event: NDKEvent) => {
+      const threadComment: Nip29GroupThreadComment = {
+        id: event.id,
+        pubkey: event.pubkey,
+        content: event.content,
+        timestamp: event.created_at || 0,
+        rootId: event.getMatchingTags('E')?.[0]?.[1] || '',
+      };
+
+      addGroupThreadComment(subId, groupId, threadComment);
     };
+
+    createSubscription({ filters, relayUrls, onEvent });
   }, [
     subId,
     relay,
@@ -83,7 +80,6 @@ export const useGroupThreadComments = (
     filter?.since,
     filter?.until,
     createSubscription,
-    removeSubscription,
   ]);
 
   return {

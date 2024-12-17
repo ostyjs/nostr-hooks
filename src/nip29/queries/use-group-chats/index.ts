@@ -7,18 +7,6 @@ import { Nip29GroupChat } from '../../types';
 
 const addGroupChat = useNip29Store.getState().addGroupChat;
 
-const onEvent = (subId: string | undefined, groupId: string | undefined, event: NDKEvent) => {
-  const chat: Nip29GroupChat = {
-    id: event.id,
-    pubkey: event.pubkey,
-    content: event.content,
-    timestamp: event.created_at || 0,
-    parentId: event.getMatchingTags('q')?.[0]?.[1] || undefined,
-  };
-
-  addGroupChat(subId, groupId, chat);
-};
-
 export const useGroupChats = (
   relay: string | undefined,
   groupId: string | undefined,
@@ -47,8 +35,7 @@ export const useGroupChats = (
     subId && groupId ? state.groups[subId]?.[groupId]?.chats : undefined
   );
 
-  const { events, hasMore, isLoading, createSubscription, loadMore, removeSubscription } =
-    useSubscription(subId);
+  const { events, hasMore, isLoading, createSubscription, loadMore } = useSubscription(subId);
 
   useEffect(() => {
     if (!relay || !groupId || !subId) return;
@@ -64,12 +51,22 @@ export const useGroupChats = (
     if (filter?.since) f.since = filter.since;
     if (filter?.until) f.until = filter.until;
 
-    const sub = createSubscription([f], {}, [relay]);
-    sub?.on('event', (event) => onEvent(subId, groupId, event));
+    const filters = [f];
+    const relayUrls = [relay];
 
-    return () => {
-      removeSubscription();
+    const onEvent = (event: NDKEvent) => {
+      const chat: Nip29GroupChat = {
+        id: event.id,
+        pubkey: event.pubkey,
+        content: event.content,
+        timestamp: event.created_at || 0,
+        parentId: event.getMatchingTags('q')?.[0]?.[1] || undefined,
+      };
+
+      addGroupChat(subId, groupId, chat);
     };
+
+    createSubscription({ filters, relayUrls, onEvent });
   }, [
     subId,
     relay,
@@ -83,7 +80,6 @@ export const useGroupChats = (
     filter?.since,
     filter?.until,
     createSubscription,
-    removeSubscription,
   ]);
 
   return {

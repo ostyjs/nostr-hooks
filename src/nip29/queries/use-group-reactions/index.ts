@@ -7,18 +7,6 @@ import { Nip29GroupReaction } from '../../types';
 
 const addGroupReaction = useNip29Store.getState().addGroupReaction;
 
-const onEvent = (subId: string | undefined, groupId: string | undefined, event: NDKEvent) => {
-  const reaction: Nip29GroupReaction = {
-    id: event.id,
-    pubkey: event.pubkey,
-    content: event.content,
-    timestamp: event.created_at || 0,
-    targetId: event.getMatchingTags('e')?.[0]?.[1] || '',
-  };
-
-  addGroupReaction(subId, groupId, reaction);
-};
-
 export const useGroupReactions = (
   relay: string | undefined,
   groupId: string | undefined,
@@ -47,8 +35,7 @@ export const useGroupReactions = (
     subId && groupId ? state.groups[subId]?.[groupId]?.reactions : undefined
   );
 
-  const { events, hasMore, isLoading, createSubscription, loadMore, removeSubscription } =
-    useSubscription(subId);
+  const { events, hasMore, isLoading, createSubscription, loadMore } = useSubscription(subId);
 
   const filteredReactions = useMemo(() => {
     if (!reactions || !events) return undefined;
@@ -70,12 +57,22 @@ export const useGroupReactions = (
     if (filter?.since) f.since = filter.since;
     if (filter?.until) f.until = filter.until;
 
-    const sub = createSubscription([f], {}, [relay]);
-    sub?.on('event', (event) => onEvent(subId, groupId, event));
+    const filters = [f];
+    const relayUrls = [relay];
 
-    return () => {
-      removeSubscription();
+    const onEvent = (event: NDKEvent) => {
+      const reaction: Nip29GroupReaction = {
+        id: event.id,
+        pubkey: event.pubkey,
+        content: event.content,
+        timestamp: event.created_at || 0,
+        targetId: event.getMatchingTags('e')?.[0]?.[1] || '',
+      };
+
+      addGroupReaction(subId, groupId, reaction);
     };
+
+    createSubscription({ filters, relayUrls, onEvent });
   }, [
     subId,
     relay,
@@ -89,7 +86,6 @@ export const useGroupReactions = (
     filter?.since,
     filter?.until,
     createSubscription,
-    removeSubscription,
   ]);
 
   return {

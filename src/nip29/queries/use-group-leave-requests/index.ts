@@ -7,17 +7,6 @@ import { Nip29GroupJoinRequest } from '../../types';
 
 const addGroupLeaveRequest = useNip29Store.getState().addGroupLeaveRequest;
 
-const onEvent = (subId: string | undefined, groupId: string | undefined, event: NDKEvent) => {
-  const joinRequest: Nip29GroupJoinRequest = {
-    id: event.id,
-    pubkey: event.pubkey,
-    reason: event.getMatchingTags('reason')?.[0]?.[1] || '',
-    timestamp: event.created_at || 0,
-  };
-
-  addGroupLeaveRequest(subId, groupId, joinRequest);
-};
-
 export const useGroupLeaveRequests = (
   relay: string | undefined,
   groupId: string | undefined,
@@ -42,8 +31,7 @@ export const useGroupLeaveRequests = (
     subId && groupId ? state.groups[subId]?.[groupId]?.leaveRequests : undefined
   );
 
-  const { events, hasMore, isLoading, createSubscription, loadMore, removeSubscription } =
-    useSubscription(subId);
+  const { events, hasMore, isLoading, createSubscription, loadMore } = useSubscription(subId);
 
   useEffect(() => {
     if (!relay || !groupId || !subId) return;
@@ -57,12 +45,21 @@ export const useGroupLeaveRequests = (
     if (filter?.since) f.since = filter.since;
     if (filter?.until) f.until = filter.until;
 
-    const sub = createSubscription([f], {}, [relay]);
-    sub?.on('event', (event) => onEvent(subId, groupId, event));
+    const filters = [f];
+    const relayUrls = [relay];
 
-    return () => {
-      removeSubscription();
+    const onEvent = (event: NDKEvent) => {
+      const joinRequest: Nip29GroupJoinRequest = {
+        id: event.id,
+        pubkey: event.pubkey,
+        reason: event.getMatchingTags('reason')?.[0]?.[1] || '',
+        timestamp: event.created_at || 0,
+      };
+
+      addGroupLeaveRequest(subId, groupId, joinRequest);
     };
+
+    createSubscription({ filters, relayUrls, onEvent });
   }, [
     subId,
     relay,
@@ -74,7 +71,6 @@ export const useGroupLeaveRequests = (
     filter?.since,
     filter?.until,
     createSubscription,
-    removeSubscription,
   ]);
 
   return {
