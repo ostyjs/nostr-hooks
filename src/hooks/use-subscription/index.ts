@@ -1,6 +1,6 @@
-import { NDKFilter, NDKSubscriptionOptions } from '@nostr-dev-kit/ndk';
 import { useCallback, useMemo } from 'react';
 
+import { CreateSubscriptionParams } from 'src/types';
 import { useStore } from '../../store';
 import { useNdk } from '../use-ndk';
 
@@ -23,12 +23,8 @@ export const useSubscription = (subId: string | undefined) => {
   const _loadMore = useStore((state) => state.loadMore);
 
   const createSubscription = useCallback(
-    (
-      filters: NDKFilter[],
-      opts?: NDKSubscriptionOptions,
-      relayUrls?: string[],
-      autoStart?: boolean
-    ) => (ndk && subId ? _createSubscription(subId, filters, opts, relayUrls, autoStart) : null),
+    (params: Omit<CreateSubscriptionParams, 'subId'>) =>
+      ndk && subId ? _createSubscription({ ...params, subId }) : null,
     [ndk, _createSubscription, subId]
   );
 
@@ -49,6 +45,12 @@ export const useSubscription = (subId: string | undefined) => {
         : false,
     [subscription?.events, subscription?.eose]
   );
+
+  useCallback(() => {
+    return () => {
+      removeSubscription();
+    };
+  }, [removeSubscription]);
 
   return { ...subscription, createSubscription, removeSubscription, loadMore, isLoading };
 };
