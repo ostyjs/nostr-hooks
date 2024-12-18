@@ -93,7 +93,7 @@
     "@nostr-dev-kit/ndk-cache-dexie": "^2.5.8",
     "@uidotdev/usehooks": "^2.4.1",
     "immer": "^10.1.1",
-    "nostr-tools": "^2.10.3",
+    "nostr-tools": "^2.10.4",
     "superjson": "^2.2.1",
     "zustand": "^5.0.1"
   }
