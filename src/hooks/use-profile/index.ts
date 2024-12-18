@@ -14,7 +14,7 @@ type ProfileParams = {
 export type ProfileStatus = 'idle' | 'loading' | 'success' | 'not-found' | 'error';
 
 /**
- * Custom hook to fetch and manage a user profile.
+ * Custom hook to fetch a user profile.
  *
  * @param [profileParams] - Optional parameters to fetch the profile.
  * @returns An object containing the user profile, null if the profile is not found,
