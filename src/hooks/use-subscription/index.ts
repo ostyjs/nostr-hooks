@@ -43,7 +43,7 @@ export const useSubscription = (subId: string | undefined) => {
       subscription
         ? (!subscription.events || subscription.events.length == 0) && !subscription.eose
         : false,
-    [subscription?.events, subscription?.eose]
+    [subscription, subscription?.events, subscription?.eose]
   );
 
   useEffect(() => {
