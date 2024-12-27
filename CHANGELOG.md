@@ -1,5 +1,16 @@
 # Nostr-Hooks
 
+## 4.2.4
+
+Bunch of bug fixes and improvements, as well as adding new features including:
+
+- Support repleacable events in `useSubscription` hook.
+- `onEvent` callback added to `createSubscription` function.
+- Automatic subscription removal when component unmounts.
+- Optional `update` parameter added to `initNdk` method.
+- `useFollows` hook added to fetch follows of a profile.
+- `useNip98` hook added to get NIP-98 HTTP Auth token.
+
 ## 4.0.0
 
 This version is a major update that includes a lot of breaking changes and improvements.
