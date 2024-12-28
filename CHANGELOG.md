@@ -1,5 +1,12 @@
 # Nostr-Hooks
 
+## 4.2.5
+
+Added more hooks, including:
+
+- `useRealtimeProfile` hook added to fetch a profile in real-time.
+- `useUpdateProfile` hook added to update a profile.
+
 ## 4.2.4
 
 Bunch of bug fixes and improvements, as well as adding new features including:
