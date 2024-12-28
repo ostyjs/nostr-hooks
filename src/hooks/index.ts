@@ -4,4 +4,6 @@ export { useLogin } from './use-login';
 export { useNdk } from './use-ndk';
 export { useNip98 } from './use-nip98';
 export { useProfile } from './use-profile';
+export { useRealtimeProfile } from './use-realtime-profile';
 export { useSubscription } from './use-subscription';
+export { useUpdateUserProfile } from './use-update-user-profile';
