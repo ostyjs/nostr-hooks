@@ -271,6 +271,41 @@ const MyComponent = () => {
 
 > If the user is not logged in, the `activeUser` will be `undefined`.
 
+### NIP-98: Getting HTTP Auth Token
+
+The `useNip98` hook allows you to retrieve the HTTP auth token for the currently active user, utilizing the provided NDK instance and its signer.
+
+```tsx
+import { useNip98 } from 'nostr-hooks';
+
+const MyComponent = () => {
+  const { getToken } = useNip98();
+
+  const sendPostRequest = async () => {
+    const token = await getToken();
+
+    const response = await fetch('https://api.example.com', {
+      method: 'POST',
+      headers: {
+        Authorization: token,
+      },
+    });
+
+    // ...
+  };
+
+  return <button onClick={sendPostRequest}>Send Request</button>;
+};
+```
+
+### useRealtimeProfile: Subscribe to Realtime Profile Updates
+
+The `useRealtimeProfile` hook allows you to subscribe to realtime updates for a given user's profile based on their `pubkey`, `npub`, `nip46 address`, or `nip05`. It returns the fetched profile, or null if the profile is not found. The hook automatically updates the profile when it changes.'
+
+### useUpdateUserProfile: Update Active User Profile
+
+The `useUpdateUserProfile` hook allows you to update the profile of the currently active user. It returns a function that can be used to update the profile.
+
 ### Best Practices
 
 #### Custom Hooks
