@@ -8,7 +8,7 @@ export const useUpdateUserProfile = () => {
   const { ndk } = useNdk();
 
   const updateUserProfile = useCallback(
-    (userProfile: NDKUserProfile, onSuccess: () => void, onError: (e: any) => void) => {
+    (userProfile: NDKUserProfile, onSuccess?: () => void, onError?: (e: any) => void) => {
       if (!ndk || !ndk.signer || !activeUser) {
         return;
       }
@@ -18,8 +18,8 @@ export const useUpdateUserProfile = () => {
       _u.profile = { ...userProfile };
 
       _u.publish()
-        .then(() => onSuccess())
-        .catch((e) => onError(e));
+        .then(() => onSuccess?.())
+        .catch((e) => onError?.(e));
     },
     [ndk, activeUser]
   );
