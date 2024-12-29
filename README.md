@@ -49,7 +49,7 @@ npm install nostr-hooks
 
 ### First initialize the NDK instance and connect to it
 
-```tsx
+```jsx
 import { useNdk } from 'nostr-hooks';
 
 const App = () => {
@@ -71,17 +71,15 @@ const App = () => {
 
 > Calling `initNdk` and `ndk.connect` are mandatory to start using Nostr-Hooks.
 
-### Subscribe to events
+### Subscribe to events with `useSubscription` hook
 
-Here are some examples of how to use the `useSubscription` hook:
+The `useSubscription` hook is used to subscribe to events based on the provided filters. It returns an array of events that match the filters.
 
-#### Example of basic usage:
-
-```tsx
+```jsx
 import { useSubscription } from 'nostr-hooks';
 
 const UserNotes = ({ pubkey }: { pubkey: string | undefined }) => {
-  const subId = `${pubkey}-notes`;
+  const subId = `notes-${pubkey}`;
 
   const { events, isLoading, createSubscription } = useSubscription(subId);
 
@@ -114,7 +112,7 @@ The `useSubscription` hook requires a `string` parameter as the subscription id.
 The hook returns an object with the following properties:
 
 - `createSubscription`: A function that can be used to create a subscription with the provided filters and options.
-- `removeSubscription`: A function that can be used to remove the subscription and clean up the events if no other components are using the same subscription.
+- `removeSubscription`: A function that can be used to remove the subscription and clean up the events if no other components are using the same subscription. This is done automatically when the component unmounts.
 - `events`: An array of events that match the filters.
 - `eose`: A boolean flag indicating whether the subscription has reached the end of the stream.
 - `isLoading`: A boolean flag indicating whether the subscription is loading (no events yet, and no eose).
@@ -125,10 +123,11 @@ The `useSubscription` hook can be utilized across multiple components. Nostr-Hoo
 
 ### Publish new events
 
-You can publish new events using the `NDKEvent` class and the `publish` method.
+You can simply publish new events using the `NDKEvent` class from `@nostr-dev-kit/ndk` and its internal `publish` method.
 
-```tsx
-import { NDKEvent } from 'nostr-dev-kit';
+```jsx
+import { useState, useCallback } from 'react';
+import { NDKEvent } from '@nostr-dev-kit/ndk';
 import { useNdk } from 'nostr-hooks';
 
 const MyComponent = () => {
@@ -136,13 +135,13 @@ const MyComponent = () => {
 
   const { ndk } = useNdk();
 
-  const handlePublish = () => {
+  const handlePublish = useCallback(() => {
     const event = new NDKEvent(ndk);
     event.content = content;
     event.kind = 1;
 
     event.publish();
-  };
+  }, [content, ndk]);
 
   return (
     <>
@@ -154,11 +153,11 @@ const MyComponent = () => {
 };
 ```
 
-### Fetch Profile for a user
+### Fetch profile for a given user
 
 The `useProfile` hook is used to fetch profile for a given user based on their `pubkey`, `npub`, `nip46 address`, or `nip05`. It returns the fetched profile, or null if the profile is not found.
 
-```tsx
+```jsx
 import { useProfile } from 'nostr-hooks';
 
 const MyComponent = () => {
@@ -177,27 +176,39 @@ const MyComponent = () => {
 };
 ```
 
-### Interact with Signer
+### Subscribe to realtime profile updates for a given user
 
-You can leverage `useNdk` hook to interact with the signer.
+The `useRealtimeProfile` hook allows you to subscribe to realtime updates for a given user's profile based on their `pubkey`, `npub`, `nip46 address`, or `nip05`. It returns the fetched profile, or null if the profile is not found. The hook automatically updates the profile when it changes.'
 
-```tsx
+### Update user profile for the currently active user
+
+The `useUpdateUserProfile` hook allows you to update the profile of the currently active user. It returns `updateUserProfile` function that can be used to update the profile.
+
+### Interact with signer manually
+
+You can leverage `useNdk` hook to interact with the signer manually.
+
+```jsx
+import { useCallback } from 'react';
 import { useNdk } from 'nostr-hooks';
-
-const newSigner = new NDKNip07Signer();
+import { NDKSigner } from '@nostr-dev-kit/ndk';
 
 const MyComponent = () => {
-  const { ndk, setSigner } = useNdk();
+  const { setSigner } = useNdk();
 
-  setSigner(newSigner); // this will keep the existing NDK instance and update its signer
+  const handleSignerChange = useCallback((newSigner: NDKSigner) => {
+    setSigner(newSigner); // this will keep the existing NDK instance and update its signer
+  }, [setSigner]);
+
+  // ...
 };
 ```
 
 > Direct usage of the `useSigner` hook might not be necessary. Refer to the following section for further details.
 
-### useLogin: Login with different signers
+### Login with different signers
 
-Nostr-Hooks offers multiple login methods that automatically update the NDK instance with the new signer. These methods also utilize local storage to remember the login method, ensuring that users do not need to log in manually each time the page reloads or the app restarts.
+The `useLogin` hook offers multiple login methods that automatically update the NDK instance with the new signer. These methods also utilize local storage to remember the login method, ensuring that users do not need to log in manually each time the page reloads or the app restarts.
 
 We offer four methods for logging in with various signers, and one method for logging out:
 
@@ -207,7 +218,7 @@ We offer four methods for logging in with various signers, and one method for lo
 - `loginFromLocalStorage`: Login from previously saved login method in local storage.
 - `logout`: Logout.
 
-```tsx
+```jsx
 import { useLogin } from 'nostr-hooks';
 
 const MyComponent = () => {
@@ -247,7 +258,7 @@ const MyComponent = () => {
 };
 ```
 
-### Getting the Active User Profile
+### Fetch user profile for the currently active user
 
 The `useActiveUser` hook allows you to retrieve the profile of the currently active user, utilizing the provided NDK instance and its signer.
 
@@ -269,19 +280,20 @@ const MyComponent = () => {
 };
 ```
 
-> If the user is not logged in, the `activeUser` will be `undefined`.
+> If the user is not logged in, the `activeUser` will be `null`.
 
-### NIP-98: Getting HTTP Auth Token
+### Get HTTP auth token (NIP-98)
 
 The `useNip98` hook allows you to retrieve the HTTP auth token for the currently active user, utilizing the provided NDK instance and its signer.
 
-```tsx
+```jsx
+import { useCallback } from 'react';
 import { useNip98 } from 'nostr-hooks';
 
 const MyComponent = () => {
   const { getToken } = useNip98();
 
-  const sendPostRequest = async () => {
+  const sendPostRequest = useCallback(async () => {
     const token = await getToken();
 
     const response = await fetch('https://api.example.com', {
@@ -292,19 +304,11 @@ const MyComponent = () => {
     });
 
     // ...
-  };
+  }, [getToken]);
 
-  return <button onClick={sendPostRequest}>Send Request</button>;
+  return <button onClick={() => sendPostRequest()}>Send Request</button>;
 };
 ```
-
-### useRealtimeProfile: Subscribe to Realtime Profile Updates
-
-The `useRealtimeProfile` hook allows you to subscribe to realtime updates for a given user's profile based on their `pubkey`, `npub`, `nip46 address`, or `nip05`. It returns the fetched profile, or null if the profile is not found. The hook automatically updates the profile when it changes.'
-
-### useUpdateUserProfile: Update Active User Profile
-
-The `useUpdateUserProfile` hook allows you to update the profile of the currently active user. It returns a function that can be used to update the profile.
 
 ### Best Practices
 
@@ -313,12 +317,12 @@ The `useUpdateUserProfile` hook allows you to update the profile of the currentl
 Create custom hooks to encapsulate the logic for fetching and managing data. This will help you reuse the logic across multiple components and keep your codebase clean and maintainable.
 Additionally, this approach helps in reducing memory usage by reusing the same subscription and events across multiple components.
 
-```tsx
+```jsx
 import { useEffect } from 'react';
 import { useSubscription } from 'nostr-hooks';
 
 export const useUserNotes = (pubkey: string | undefined) => {
-  const subId = `${pubkey}-notes`;
+  const subId = `notes-${pubkey}`;
 
   const { events, isLoading, loadMore, createSubscription } = useSubscription(subId);
 
@@ -336,17 +340,17 @@ export const useUserNotes = (pubkey: string | undefined) => {
 
 #### Subscription Ids
 
-Use meaningful subscription ids to categorize events and manage subscriptions effectively. It's recommended to define subscription ids based on your filter parameters, similar to a query key.
+Use meaningful subscription ids to categorize events and manage subscriptions effectively. It's recommended to define subscription ids based on your filter parameters, similar to a query key, and include variables that uniquely identify the subscription.
 
 ```tsx
-const subId = `${pubkey}-notes`;
+const subId = `notes-${pubkey}`;
 ```
 
 You can use the same subscription id across multiple components to share the same subscription and events. Nostr-Hooks consolidates all subscriptions from various components into a single request, ensuring each component receives only the events it requires, based on their subscription ids.
 
 ## NIP-29
 
-NIP-29 has been integrated in v4! This update introduces several new hooks and methods for interacting with NIP-29 Relay-based groups. We've implemented an internal store following best practices for state management in React, offering a comprehensive set of hooks and methods that are fast, efficient, and user-friendly.
+NIP-29 has been integrated into Nostr-Hooks since v4! This update introduces several new hooks and methods for interacting with NIP-29 Relay-based groups. We've implemented an internal store following best practices for state management in React, offering a comprehensive set of hooks and methods that are fast, efficient, and user-friendly.
 
 ### NIP-29 Queries
 
@@ -405,4 +409,4 @@ Nostr-Hooks is licensed under the MIT License. For more information, see the [LI
 
 ## Contact
 
-If you have any questions or concerns about Nostr-Hooks, please contact the developer at [npub18c556t7n8xa3df2q82rwxejfglw5przds7sqvefylzjh8tjne28qld0we7](https://njump.me/npub18c556t7n8xa3df2q82rwxejfglw5przds7sqvefylzjh8tjne28qld0we7).
+If you have any questions or concerns about Nostr-Hooks, please contact the developer at [npub18c556t7n8xa3df2q82rwxejfglw5przds7sqvefylzjh8tjne28qld0we7](https://primal.net/p/npub18c556t7n8xa3df2q82rwxejfglw5przds7sqvefylzjh8tjne28qld0we7).
