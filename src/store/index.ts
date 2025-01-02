@@ -121,7 +121,7 @@ export const useStore = create<State & Actions>()(
 
           const events = get().subscriptions[subId || 'na']?.events || ([] as NDKEvent[]);
 
-          get().setHasMore(subId, events.length > filters.reduce((a, b) => a + (b.limit || 0), 0));
+          get().setHasMore(subId, events.length >= filters.reduce((a, b) => a + (b.limit || 0), 1));
         });
 
         set(
@@ -233,9 +233,9 @@ export const useStore = create<State & Actions>()(
           const events = get().subscriptions[subId || 'na']?.events || ([] as NDKEvent[]);
 
           const _lim =
-            limit || sub.subscription.filters.reduce((a, b) => a + (b.limit || 0), 0) || 50;
+            limit || sub.subscription.filters.reduce((a, b) => a + (b.limit || 0), 1) || 50;
 
-          get().setHasMore(subId, events.length > _lim);
+          get().setHasMore(subId, events.length >= _lim);
         });
       },
 
