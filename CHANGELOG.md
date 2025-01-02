@@ -1,5 +1,9 @@
 # Nostr-Hooks
 
+## 4.2.8
+
+Fixed `hasMore` issue in `useSubscription` hook when there are less events than the limit.
+
 ## 4.2.5
 
 Added more hooks, including:

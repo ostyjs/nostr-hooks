@@ -119,10 +119,9 @@ export const useStore = create<State & Actions>()(
         subscription.on('eose', () => {
           get().setEose(subId, true);
 
-          const events = get().subscriptions[subId || 'na']?.events;
-          if (events && events.length > 0) {
-            get().setHasMore(subId, true);
-          }
+          const events = get().subscriptions[subId || 'na']?.events || ([] as NDKEvent[]);
+
+          get().setHasMore(subId, events.length > filters.reduce((a, b) => a + (b.limit || 0), 0));
         });
 
         set(
@@ -227,13 +226,16 @@ export const useStore = create<State & Actions>()(
           sub.subscription.relaySet
         );
 
-        let hasEvents = false;
         loadMoreSub.on('event', (event) => {
-          hasEvents = true;
           sub.subscription.emit('event', event, event.relay, sub.subscription);
         });
         loadMoreSub.on('eose', () => {
-          get().setHasMore(subId, hasEvents);
+          const events = get().subscriptions[subId || 'na']?.events || ([] as NDKEvent[]);
+
+          const _lim =
+            limit || sub.subscription.filters.reduce((a, b) => a + (b.limit || 0), 0) || 50;
+
+          get().setHasMore(subId, events.length > _lim);
         });
       },
 
