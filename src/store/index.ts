@@ -52,7 +52,7 @@ type Actions = {
 
   setHasMore: (subId: string, hasMore: boolean) => void;
 
-  loadMore: (subId: string, limit?: number) => void;
+  loadMore: (subId: string, limit?: number, since?: number | null) => void;
 
   // login actions
   loginWithExtension: LoginWithExtension;
@@ -197,7 +197,7 @@ export const useStore = create<State & Actions>()(
           })
         ),
 
-      loadMore: (subId, limit) => {
+      loadMore: (subId, limit, since) => {
         if (!subId) return;
 
         const sub = get().subscriptions[subId];
@@ -219,6 +219,7 @@ export const useStore = create<State & Actions>()(
               ({
                 ...filter,
                 limit: limit || filter.limit || 50,
+                since: since === undefined ? filter.since : since === null ? undefined : since,
                 until: untilTimestamp,
               }) as NDKFilter
           ),
