@@ -34,7 +34,7 @@ export const useSubscription = (subId: string | undefined) => {
   );
 
   const loadMore = useCallback(
-    (limit?: number) => subId && ndk && _loadMore(subId, limit),
+    (limit?: number, since?: number | null) => subId && ndk && _loadMore(subId, limit, since),
     [ndk, _loadMore, subId]
   );
 
