@@ -56,7 +56,7 @@ export const useActiveUser = (fetchProfile?: boolean) => {
         setActiveUser(user);
       });
     });
-  }, [ndk, fetchProfile, setStatus]);
+  }, [ndk, fetchProfile, setStatus, setActiveUser, ndk?.signer]);
 
   return { activeUser, status };
 };
