@@ -112,16 +112,20 @@ export const useStore = create<State & Actions>()(
 
         const subscription = ndk.subscribe(filters, opts, relaySet, autoStart);
 
+        let count = 0;
         subscription.on('event', (event) => {
+          count++;
           get().addEvent(subId, event, replaceOlderReplaceableEvents);
           onEvent?.(event);
         });
         subscription.on('eose', () => {
           get().setEose(subId, true);
 
-          const events = get().subscriptions[subId || 'na']?.events || ([] as NDKEvent[]);
+          const _lim = filters.some((f) => f.limit && f.limit > 0)
+            ? filters.reduce((acc, f) => acc + (f.limit || 0), 0)
+            : undefined;
 
-          get().setHasMore(subId, events.length >= filters.reduce((a, b) => a + (b.limit || 0), 1));
+          get().setHasMore(subId, Boolean(count > 0 && _lim && _lim > 0 && count >= _lim));
         });
 
         set(
@@ -218,7 +222,7 @@ export const useStore = create<State & Actions>()(
             (filter) =>
               ({
                 ...filter,
-                limit: limit || filter.limit || 50,
+                limit: limit && limit > 0 ? limit : filter.limit,
                 since: since === undefined ? filter.since : since === null ? undefined : since,
                 until: untilTimestamp,
               }) as NDKFilter
@@ -227,16 +231,20 @@ export const useStore = create<State & Actions>()(
           sub.subscription.relaySet
         );
 
+        let count = 0;
         loadMoreSub.on('event', (event) => {
-          sub.subscription.emit('event', event, event.relay, sub.subscription);
+          count++;
+          sub.subscription.emit('event', event, event.relay, sub.subscription, false, false);
         });
         loadMoreSub.on('eose', () => {
-          const events = get().subscriptions[subId || 'na']?.events || ([] as NDKEvent[]);
-
           const _lim =
-            limit || sub.subscription.filters.reduce((a, b) => a + (b.limit || 0), 1) || 50;
+            limit && limit > 0
+              ? limit
+              : sub.subscription.filters.some((f) => f.limit && f.limit > 0)
+                ? sub.subscription.filters.reduce((acc, f) => acc + (f.limit || 0), 0)
+                : undefined;
 
-          get().setHasMore(subId, events.length >= _lim);
+          get().setHasMore(subId, Boolean(count > 0 && _lim && _lim > 0 && count >= _lim));
         });
       },
 
